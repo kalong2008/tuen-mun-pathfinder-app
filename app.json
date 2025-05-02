@@ -1,42 +1,20 @@
 {
   "expo": {
-    "name": "tuen-mun-pathfinder-app",
-    "slug": "tuen-mun-pathfinder-app",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "tuenmunpathfinderapp",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "0d489ade-3539-4f30-94a5-cc44d75bac93"
+      }
+    },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.cklckl2008.tuenmunpathfinderapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+      "package": "com.cklckl2008.tuenmunpathfinderapp"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "newArchEnabled": true,
+    "userInterfaceStyle": "light"
   }
 }
