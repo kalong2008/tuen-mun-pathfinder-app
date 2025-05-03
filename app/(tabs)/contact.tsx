@@ -1,6 +1,6 @@
 import { Colors, TARGET_COLORS } from '@/app/constants/colors';
+import { useColorScheme } from '@/app/hooks/useColorScheme';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { Stack } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Keyboard, KeyboardAvoidingView, Linking, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';

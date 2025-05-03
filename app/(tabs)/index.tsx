@@ -1,9 +1,12 @@
 import { Colors, TARGET_COLORS } from '@/app/constants/colors';
+import { useColorScheme } from '@/app/hooks/useColorScheme';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { SignedIn, useClerk, useUser } from '@clerk/clerk-expo';
+import { FontAwesome } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type DailyVerse = {
   citation: string;
@@ -15,6 +18,8 @@ type DailyVerse = {
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const router = useRouter();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const [dailyVerse, setDailyVerse] = useState<DailyVerse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,14 +57,52 @@ export default function HomeScreen() {
     router.navigate('contact');
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace('/');
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors[colorScheme].background }}>
       <Stack.Screen options={{ title: '屯門前鋒會 幼鋒會', headerTitleAlign: 'center' }} />
       
       <ScrollView 
-        style={styles.container}
+        style={[
+          styles.container,
+          Platform.OS === 'android' && { paddingTop: Constants.statusBarHeight }
+        ]}
         contentContainerStyle={styles.contentContainer}
       >
+        {/* User Info */}
+        <SignedIn>
+          <View style={[
+            styles.userContainer,
+            { backgroundColor: 'rgba(200, 220, 255, 0.2)' }
+          ]}>
+            <View style={styles.userHeader}>
+              <FontAwesome 
+                name="user" 
+                size={20} 
+                color={Colors[colorScheme].primary} 
+              />
+              <Text style={[styles.userHeaderText, { color: Colors[colorScheme].text }]}>
+                歡迎：{user?.firstName || user?.username || 'User'}
+              </Text>
+              <View style={{ flex: 1 }} />
+              <TouchableOpacity 
+                onPress={handleSignOut} 
+                style={[styles.signOutButton, { backgroundColor: Colors[colorScheme].primary }]}
+              >
+                <Text style={styles.signOutText}>登出</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SignedIn>
+
         {/* Banner */}
         <View style={styles.bannerContainer}>
           <Image 
@@ -148,9 +191,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
   },
   contentContainer: {
+    paddingHorizontal: 16,
     paddingBottom: 60,
   },
   bannerContainer: {
@@ -321,5 +364,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 16,
+  },
+  userContainer: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  userHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    //marginBottom: 12,
+  },
+  userHeaderText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  userDetailsContainer: {
+    marginBottom: 12,
+  },
+  welcomeText: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  signOutButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  signOutText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

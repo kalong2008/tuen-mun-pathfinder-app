@@ -1,13 +1,14 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { SignedIn, SignedOut } from '@clerk/clerk-expo';
+import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import {
-  Image,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import AwesomeGallery, { RenderItemInfo } from 'react-native-awesome-gallery';
 
@@ -76,31 +77,41 @@ function GalleryModalScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Use Stack.Screen to hide the header if using stack layout */}
       <Stack.Screen options={{ headerShown: false }} />
-      <AwesomeGallery
-        data={galleryData}
-        keyExtractor={(item: GalleryItem) => item.uri}
-        renderItem={renderItem}
-        initialIndex={initialIndex}
-        onIndexChange={onIndexChange}
-        onSwipeToClose={() => router.back()} // Close modal on vertical swipe
-        // onTap={() => setControlsVisible(!controlsVisible)} // Optional: Toggle controls on tap
-        loop // Enable looping through images
-      />
-      {/* Simple Close Button */}
-      <TouchableOpacity
-        style={[styles.closeButton, { top: top + 10 }]} // Position below status bar
-        onPress={() => router.back()}
-      >
-        <Text style={styles.closeButtonText}>×</Text>
-      </TouchableOpacity>
-      {/* Optional: Index Indicator */}
-      <View style={[styles.indexIndicator, { top: top + 15 }]}>
-        <Text style={styles.indexText}>
-          {`${currentIndex + 1} / ${galleryData.length}`}
-        </Text>
-      </View>
+      
+      <SignedIn>
+        <AwesomeGallery
+          data={galleryData}
+          keyExtractor={(item: GalleryItem) => item.uri}
+          renderItem={renderItem}
+          initialIndex={initialIndex}
+          onIndexChange={onIndexChange}
+          onSwipeToClose={() => router.back()}
+          loop
+        />
+        <TouchableOpacity
+          style={[styles.closeButton, { top: top + 10 }]}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.closeButtonText}>×</Text>
+        </TouchableOpacity>
+        <View style={[styles.indexIndicator, { top: top + 15 }]}>
+          <Text style={styles.indexText}>
+            {`${currentIndex + 1} / ${galleryData.length}`}
+          </Text>
+        </View>
+      </SignedIn>
+
+      <SignedOut>
+        <View style={styles.signInContainer}>
+          <Text style={styles.signInText}>Please sign in to view gallery</Text>
+          <Link href={`/(auth)/sign-in?redirect_url=${encodeURIComponent('/gallery')}`} asChild>
+            <TouchableOpacity style={styles.signInButton}>
+              <Text style={styles.signInButtonText}>Sign In</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </SignedOut>
     </View>
   );
 }
@@ -140,5 +151,27 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  signInContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  signInText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  signInButton: {
+    backgroundColor: '#3c73e9',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+  },
+  signInButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

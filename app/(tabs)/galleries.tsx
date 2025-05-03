@@ -1,4 +1,8 @@
-import { Stack, useRouter } from 'expo-router';
+import { Colors } from '@/app/constants/colors';
+import { useColorScheme } from '@/app/hooks/useColorScheme';
+import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
+import { FontAwesome } from '@expo/vector-icons';
+import { Link, Stack, useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   ActivityIndicator,
@@ -60,12 +64,15 @@ const GalleryItem = ({ item, onPress }: { item: GalleryInfo; onPress: () => void
 
 export default function GalleriesListScreen() {
   const router = useRouter();
+  const colorScheme = useColorScheme() ?? 'light';
+  const { isSignedIn } = useAuth();
   const [galleries, setGalleries] = React.useState<GalleryInfo[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const fetchGalleries = async () => {
+      console.log('Attempting to fetch galleries...');
       setIsLoading(true);
       setError(null);
       try {
@@ -76,24 +83,15 @@ export default function GalleriesListScreen() {
         const data: { galleries: ApiGalleryItem[] } = await response.json();
         console.log('API Response:', data);
 
-        // Transform API data into GalleryInfo structure
         const transformedData = data.galleries
           .map((item) => {
-            // Check if item.link is valid before processing
             if (typeof item.href !== 'string' || !item.href) {
               console.warn(`Invalid or missing link for gallery: ${item.name}`);
-              return null; // Skip this item if link is invalid
+              return null;
             }
-
             const apiEndpoint = `${BASE_URL}${item.href}`;
-            // Construct thumbnail URI safely, handling both .jpg and .jpeg extensions
             const thumbnailUri = `${BASE_URL}${item.href.replace(/\.json$/, '-1.jpg')}`;
-            // Try .jpg first, if that fails, try .jpeg
             const fallbackThumbnailUri = `${BASE_URL}${item.href.replace(/\.json$/, '-1.jpeg')}`;
-            
-            console.log(`Gallery: ${item.name}`);
-            console.log(`Thumbnail URI: ${thumbnailUri}`);
-            console.log(`Fallback URI: ${fallbackThumbnailUri}`);
             
             return {
               name: item.name,
@@ -104,7 +102,7 @@ export default function GalleriesListScreen() {
               fallbackThumbnailUri: fallbackThumbnailUri,
             };
           })
-          .filter((item): item is GalleryInfo => item !== null); // Remove null items
+          .filter((item): item is GalleryInfo => item !== null);
 
         setGalleries(transformedData.reverse());
       } catch (err) {
@@ -115,9 +113,16 @@ export default function GalleriesListScreen() {
       }
     };
 
-    fetchGalleries();
-  }, []); // Runs once on mount
-
+    if (isSignedIn) {
+      console.log('User is signed in, fetching galleries.');
+      fetchGalleries();
+    } else {
+      console.log('User is not signed in, skipping gallery fetch.');
+      setGalleries([]);
+      setIsLoading(false);
+      setError(null);
+    }
+  }, [isSignedIn]);
 
   const renderItem = ({ item }: { item: GalleryInfo }) => (
     <GalleryItem
@@ -135,33 +140,54 @@ export default function GalleriesListScreen() {
     />
   );
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" />
-        <Text>Loading galleries...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <Text style={styles.errorText}>Error loading galleries: {error}</Text>
-        {/* Optional: Add a retry button */}
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Available Galleries' }} />
-      <FlatList
-        data={galleries}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.apiEndpoint} 
-        contentContainerStyle={[styles.listContainer, { paddingBottom: 80 }]}
-      />
+      <Stack.Screen options={{ title: '相簿', headerTitleAlign: 'center' }} />
+      
+      <SignedIn>
+        {isLoading ? (
+          <View style={[styles.container, styles.center]}>
+            <ActivityIndicator size="large" />
+            <Text>載入相簿...</Text>
+          </View>
+        ) : error ? (
+          <View style={[styles.container, styles.center]}>
+            <Text style={styles.errorText}>載入相簿時發生錯誤: {error}</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={galleries}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.apiEndpoint} 
+            contentContainerStyle={[styles.listContainer, { paddingBottom: 80 }]}
+          />
+        )}
+      </SignedIn>
+
+      <SignedOut>
+        <View style={[styles.signedOutContainer, { backgroundColor: Colors[colorScheme].background }]}>
+          <FontAwesome 
+            name="lock" 
+            size={64} 
+            color={Colors[colorScheme].icon} 
+            style={styles.lockIcon}
+          />
+          <Text style={[styles.signedOutTitle, { color: Colors[colorScheme].text }]}>
+            需要登入
+          </Text>
+          <Text style={[styles.signedOutText, { color: Colors[colorScheme].text }]}>
+            請先登入以查看相簿內容
+          </Text>
+          
+          <Link 
+            href={`/(auth)/sign-in?redirect_url=${encodeURIComponent('/galleries')}`} 
+            style={[styles.signInButton, { backgroundColor: Colors[colorScheme].primary }]}
+          >
+            <Text style={styles.signInButtonText}>前往登入</Text>
+          </Link>
+
+        </View>
+      </SignedOut>
     </View>
   );
 }
@@ -202,5 +228,43 @@ const styles = StyleSheet.create({
     color: 'red',
     margin: 20,
     textAlign: 'center',
+  },
+  signedOutContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  lockIcon: {
+    marginBottom: 24,
+    opacity: 0.6,
+  },
+  signedOutTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  signedOutText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+    opacity: 0.8,
+  },
+  signInButton: {
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+  },
+  signInButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

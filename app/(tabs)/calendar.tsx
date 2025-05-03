@@ -4,8 +4,8 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
 
 // Color constants
-const CAMP_COLOR = '#2196f3'; // Blue
-const ACTIVITY_COLOR = '#4CAF50'; // Green
+const CAMP_COLOR = '#A6B1E1'; // Blue
+const ACTIVITY_COLOR = '#B7C4CF'; // Orange
 const TEXT_COLOR = 'white';
 
 // Activity types
@@ -79,8 +79,9 @@ const CustomDay = ({ date, state, marking }: any) => {
       <Text style={{ 
         marginLeft: isCamp && isStartingDay ? '-20%' : 0,
         marginRight: isCamp && isEndingDay ? '-20%' : 0,
+        fontWeight: isToday ? 'bold' : 'normal',
         color: isDisabled ? '#d9d9d9' : 
-               isToday ? 'red' : 
+               isToday ? '#991700' : 
                isStartingDay || isEndingDay || isCamp || hasActivity ? TEXT_COLOR : '#333',
         textAlign: 'center',
         opacity: isDisabled ? 0.3 : 1
