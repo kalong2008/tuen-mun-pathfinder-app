@@ -246,11 +246,11 @@ export default function NoticeScreen() {
         </View>
         <TouchableOpacity 
           style={[styles.detailsButton, {
-            backgroundColor: isPastActivity ? '#9e9e9e' : targetColor
+            backgroundColor: isPastActivity ? '#9e9e9e' : targetColor,
           }]}
           onPress={() => handleViewDetails(item)}
         >
-          <Text style={styles.detailsButtonText}>查看通告</Text>
+          <Text style={[styles.detailsButtonText, {color: APP_COLORS.BACKGROUND, opacity: isPastActivity && Platform.OS === 'ios' ? opacity : 1}]}>查看通告</Text>
         </TouchableOpacity>
       </View>
     );
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 4,
     alignSelf: 'flex-end',
-    elevation: 2,
+    //elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,

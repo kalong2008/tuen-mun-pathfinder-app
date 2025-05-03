@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContainer: {
+    paddingTop: 0,
     paddingVertical: 10,
   },
   itemContainer: {

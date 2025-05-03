@@ -100,8 +100,7 @@ const NoticeDetailModal = ({ visible, notice, onClose, getTargetColor }: NoticeD
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.modalContainer}>
           <View style={[
-            styles.modalContent,
-            isPastActivity ? { opacity: 0.8 } : {}
+            styles.modalContent,             
           ]}>
             <View style={[styles.header, {backgroundColor: targetColor + '20'}]}>
               <Text style={[
