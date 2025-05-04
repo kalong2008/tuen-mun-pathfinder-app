@@ -28,7 +28,7 @@ export default function HomeScreen() {
     async function fetchDailyVerse() {
       try {
         setLoading(true);
-        const response = await fetch('http://tuenmunpathfinder.com/api/bible/cached');
+        const response = await fetch('https://tuenmunpathfinder.com/api/bible/cached');
         if (!response.ok) {
           throw new Error('Failed to fetch daily verse');
         }
