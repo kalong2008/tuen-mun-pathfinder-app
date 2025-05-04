@@ -1,5 +1,5 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import Constants from 'expo-constants';
@@ -8,7 +8,7 @@ import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
@@ -81,32 +81,19 @@ async function registerForPushNotificationsAsync() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { isLoaded, isSignedIn } = useAuth();
 
   // --- Notification State & Effect Start ---
-  const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
-  const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
-    // Only register for notifications if user is signed in
-    // You might want this logic elsewhere depending on your UX
-    // (e.g., register immediately, or only after sign-in)
-    if (isSignedIn) { 
-      registerForPushNotificationsAsync()
-        .then(token => setExpoPushToken(token ?? null))
-        .catch((error: any) => {
-          console.error('Error getting push token:', error);
-          setExpoPushToken(null); // Set to null on error
-        });
-    } else {
-      // Optionally handle the case where user is not signed in (e.g., clear token)
-      setExpoPushToken(null);
-    }
+    // Always register for notifications on mount
+    registerForPushNotificationsAsync()
+      .catch((error: any) => {
+        console.error('Error getting push token:', error);
+      });
 
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      setNotification(notification);
       console.log('Notification Received:', notification);
       // Handle received notification while app is foregrounded
     });
@@ -121,13 +108,10 @@ function RootLayoutNav() {
 
     // Cleanup function
     return () => {
-      notificationListener.current &&
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      responseListener.current &&
-        Notifications.removeNotificationSubscription(responseListener.current);
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
     };
-    // Add isSignedIn to dependencies if registration depends on it
-  }, [isSignedIn]); 
+  }, []); 
   // --- Notification State & Effect End ---
 
   return (
