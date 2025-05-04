@@ -1,14 +1,18 @@
 import { SignedIn, SignedOut } from '@clerk/clerk-expo';
+import { FontAwesome } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import {
-    Image,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import AwesomeGallery, { RenderItemInfo } from 'react-native-awesome-gallery';
 
@@ -18,17 +22,17 @@ type GalleryItem = { uri: string };
 // Define constants for safe area
 const SAFE_AREA_TOP = Platform.OS === 'ios' ? 44 : 24;
 
-const renderItem = ({ item, setImageDimensions }: RenderItemInfo<GalleryItem>) => {
-  // The library expects the renderItem to handle loading and setting dimensions.
-  // For basic network images with Expo Image or RN Image, this might
-  // sometimes work without explicitly setting dimensions, but it's safer to include.
+// Create a separate component for the gallery item
+const GalleryImage = ({ item, setImageDimensions }: RenderItemInfo<GalleryItem>) => {
+  // Remove all state and download logic from here
+  
   return (
+    // Return only the Image component
     <Image
       source={{ uri: item.uri }}
       style={StyleSheet.absoluteFillObject}
-      resizeMode="contain" // Contain ensures the whole image fits
+      resizeMode="contain"
       onLoad={(e) => {
-        // Important: Provide dimensions to the gallery for layout
         const { width, height } = e.nativeEvent.source;
         setImageDimensions({ width, height });
       }}
@@ -75,6 +79,32 @@ function GalleryModalScreen() {
     setCurrentIndex(index);
   };
 
+  // Download handler for the current image
+  const handleDownload = async () => {
+    const currentImageUri = galleryData[currentIndex]?.uri;
+    if (!currentImageUri) {
+      Alert.alert('Error', 'Could not find the image URL.');
+      return;
+    }
+
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant permission to save images.');
+        return;
+      }
+
+      const fileUri = `${FileSystem.cacheDirectory}${Date.now()}.jpg`;
+      Alert.alert('Downloading', 'Saving image to your device...'); // Optional: provide feedback
+      const { uri } = await FileSystem.downloadAsync(currentImageUri, fileUri);
+      await MediaLibrary.saveToLibraryAsync(uri);
+      Alert.alert('Success', 'Image saved successfully!');
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      Alert.alert('Error', 'Failed to save image.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -83,17 +113,23 @@ function GalleryModalScreen() {
         <AwesomeGallery
           data={galleryData}
           keyExtractor={(item: GalleryItem) => item.uri}
-          renderItem={renderItem}
+          renderItem={GalleryImage}
           initialIndex={initialIndex}
           onIndexChange={onIndexChange}
           onSwipeToClose={() => router.back()}
           loop
         />
         <TouchableOpacity
-          style={[styles.closeButton, { top: top + 10 }]}
+          style={[styles.fixedButton, styles.closeButton]}
           onPress={() => router.back()}
         >
           <Text style={styles.closeButtonText}>×</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.fixedButton, styles.downloadButton]}
+          onPress={handleDownload}
+        >
+          <FontAwesome name="download" size={20} color="white" />
         </TouchableOpacity>
         <View style={[styles.indexIndicator, { top: top + 15 }]}>
           <Text style={styles.indexText}>
@@ -124,23 +160,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000', // Black background for lightbox effect
   },
-  closeButton: {
+  fixedButton: {
     position: 'absolute',
-    left: 15,
-    // top: 10, // Adjust based on safe area
-    padding: 8,
+    top: SAFE_AREA_TOP + 10,
+    padding: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 5,
-    zIndex: 10, // Ensure it's above the gallery
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  closeButton: {
+    left: 15,
   },
   closeButtonText: {
     color: '#fff',
     fontSize: 24,
+    lineHeight: 24, // Adjust line height for better centering
+  },
+  downloadButton: {
+    right: 15,
+    padding: 12, // Adjust padding for icon size
   },
   indexIndicator: {
     position: 'absolute',
     alignSelf: 'center',
-    // top: 15, // Adjust based on safe area
     paddingHorizontal: 10,
     paddingVertical: 5,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
