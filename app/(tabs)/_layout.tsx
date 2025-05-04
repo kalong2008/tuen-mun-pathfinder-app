@@ -3,10 +3,10 @@ import React from 'react';
 import { Platform } from 'react-native';
 
 import { Colors } from '@/app/constants/colors';
-import { useColorScheme } from '@/app/hooks/useColorScheme';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 function TabLayout() {
   const colorScheme = useColorScheme();

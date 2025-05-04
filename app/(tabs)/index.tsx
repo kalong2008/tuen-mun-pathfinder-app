@@ -1,6 +1,6 @@
 import { Colors, TARGET_COLORS } from '@/app/constants/colors';
-import { useColorScheme } from '@/app/hooks/useColorScheme';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SignedIn, useClerk, useUser } from '@clerk/clerk-expo';
 import { FontAwesome } from '@expo/vector-icons';
 import Constants from 'expo-constants';

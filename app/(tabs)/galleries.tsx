@@ -1,5 +1,5 @@
 import { Colors } from '@/app/constants/colors';
-import { useColorScheme } from '@/app/hooks/useColorScheme';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
 import { FontAwesome } from '@expo/vector-icons';
 import { Link, Stack, useRouter } from 'expo-router';

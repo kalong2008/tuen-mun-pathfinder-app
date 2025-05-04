@@ -1,4 +1,4 @@
-import { useColorScheme } from '@/app/hooks/useColorScheme';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';

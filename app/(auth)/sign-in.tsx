@@ -1,5 +1,5 @@
 import { Colors } from '@/app/constants/colors'
-import { useColorScheme } from '@/app/hooks/useColorScheme'
+import { useColorScheme } from '@/hooks/useColorScheme'
 import { useSignIn } from '@clerk/clerk-expo'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useState } from 'react'
