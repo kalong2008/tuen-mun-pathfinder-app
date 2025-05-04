@@ -1,4 +1,4 @@
-import { Colors } from '@/app/constants/colors';
+import { APP_COLORS, Colors } from '@/app/constants/colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-expo';
 import { FontAwesome } from '@expo/vector-icons';
@@ -142,7 +142,7 @@ export default function GalleriesListScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: '相簿', headerTitleAlign: 'center' }} />
+      <Stack.Screen options={{ title: '相簿', headerTitleAlign: 'center', headerStyle: { backgroundColor: APP_COLORS.BACKGROUND } }} />
       
       <SignedIn>
         {isLoading ? (

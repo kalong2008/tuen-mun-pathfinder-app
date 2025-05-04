@@ -1,4 +1,4 @@
-import { Colors, TARGET_COLORS } from '@/app/constants/colors';
+import { APP_COLORS, Colors, TARGET_COLORS } from '@/app/constants/colors';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Stack } from 'expo-router';
@@ -160,7 +160,7 @@ export default function ContactScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors[colorScheme].background }}>
-      <Stack.Screen options={{ title: '聯絡我們', headerTitleAlign: 'center' }} />
+      <Stack.Screen options={{ title: '聯絡我們', headerTitleAlign: 'center', headerStyle: { backgroundColor: APP_COLORS.BACKGROUND } }} />
       
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

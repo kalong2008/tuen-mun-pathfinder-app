@@ -2,6 +2,7 @@ import { Stack, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
+import { APP_COLORS } from '../constants/colors';
 
 // Color constants
 const CAMP_COLOR = '#A6B1E1'; // Blue
@@ -145,7 +146,7 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: '活動日曆' }} />
+      <Stack.Screen options={{ title: '活動', headerStyle: { backgroundColor: APP_COLORS.BACKGROUND } }} />
       <Calendar
         onMonthChange={(month: DateData) => {
           setCurrentMonth(month.dateString);
