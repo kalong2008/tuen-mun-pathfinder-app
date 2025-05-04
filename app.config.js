@@ -1,4 +1,4 @@
-{
+export default {
   "expo": {
     "extra": {
       "eas": {
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.cklckl2008.tuenmunpathfinderapp",
-      "googleServicesFile": "google-services.json"
+      "googleServicesFile": process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json"
     },
     "newArchEnabled": true,
     "userInterfaceStyle": "light",
@@ -28,4 +28,4 @@
       ]
     ]
   }
-}
+};
