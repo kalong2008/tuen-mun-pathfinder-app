@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
@@ -71,6 +71,17 @@ async function registerForPushNotificationsAsync() {
       })
     ).data;
     console.log('Expo Push Token:', pushTokenString);
+    await fetch('http://192.168.50.114:3000/api/register-push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token: pushTokenString,
+      }),
+    });
+    console.log('Push token sent to server');
+
     return pushTokenString;
   } catch (e: unknown) {
     handleRegistrationError(`${e}`);
@@ -81,6 +92,7 @@ async function registerForPushNotificationsAsync() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
 
   // --- Notification State & Effect Start ---
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
@@ -100,10 +112,19 @@ function RootLayoutNav() {
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
       console.log('Notification Response:', response);
-      // Handle user tapping on notification
-      // Example: navigate to a specific screen
-      // const { screen } = response.notification.request.content.data;
-      // if (screen) { router.push(screen); }
+      const data = response.notification.request.content.data;
+      
+      // Check if data contains a screen property and navigate
+      if (data && typeof data.screen === 'string') {
+        try {
+          console.log(`Navigating to screen: ${data.screen}`);
+          router.push(data.screen as any); // Use router to navigate
+        } catch (e) {
+          console.error(`Failed to navigate to screen: ${data.screen}`, e);
+        }
+      } else {
+        console.log('No screen specified in notification data or data is invalid.');
+      }
     });
 
     // Cleanup function
@@ -111,7 +132,7 @@ function RootLayoutNav() {
       notificationListener.current?.remove();
       responseListener.current?.remove();
     };
-  }, []); 
+  }, [router]); 
   // --- Notification State & Effect End ---
 
   return (
