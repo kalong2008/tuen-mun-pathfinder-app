@@ -12,7 +12,8 @@
       }
     },
     "android": {
-      "package": "com.cklckl2008.tuenmunpathfinderapp"
+      "package": "com.cklckl2008.tuenmunpathfinderapp",
+      "googleServicesFile": "google-services.json"
     },
     "newArchEnabled": true,
     "userInterfaceStyle": "light"
