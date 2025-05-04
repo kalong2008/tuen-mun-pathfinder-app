@@ -68,7 +68,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors[colorScheme].background }}>
-      <Stack.Screen options={{ title: '屯門前鋒會 幼鋒會', headerTitleAlign: 'center' }} />
+      <Stack.Screen options={{ title: '主頁', headerTitleAlign: 'center' }} />
       
       <ScrollView 
         style={[

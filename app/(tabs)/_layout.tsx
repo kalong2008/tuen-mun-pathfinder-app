@@ -19,6 +19,11 @@ function TabLayout() {
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         headerTitleAlign: 'center',
+        headerStyle: {
+          backgroundColor: Colors[colorScheme ?? 'light'].background,
+          height: Platform.OS === 'android' ? 56 : undefined,
+        },
+        headerTintColor: Colors[colorScheme ?? 'light'].text,
         tabBarStyle: Platform.select({
           ios: {
             // Use a transparent background on iOS to show the blur effect
