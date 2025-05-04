@@ -1,18 +1,19 @@
 import { SignedIn, SignedOut } from '@clerk/clerk-expo';
 import { FontAwesome } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
+import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import {
-  Alert,
-  Image,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import AwesomeGallery, { RenderItemInfo } from 'react-native-awesome-gallery';
 
@@ -23,20 +24,49 @@ type GalleryItem = { uri: string };
 const SAFE_AREA_TOP = Platform.OS === 'ios' ? 44 : 24;
 
 // Create a separate component for the gallery item
+// Remove React.memo for testing
 const GalleryImage = ({ item, setImageDimensions }: RenderItemInfo<GalleryItem>) => {
-  // Remove all state and download logic from here
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [hasLoadFailed, setHasLoadFailed] = React.useState(false);
+
+  const handleLoad = React.useCallback((e: any) => {
+    // Get dimensions from expo-image load event
+    const { width, height } = e.source;
+    setImageDimensions({ width, height });
+    setIsLoading(false);
+    setHasLoadFailed(false);
+  }, [setImageDimensions]);
+
+  const handleError = React.useCallback(() => {
+    // No fallback logic here, just mark as failed
+    setIsLoading(false);
+    setHasLoadFailed(true);
+  }, []);
   
   return (
-    // Return only the Image component
-    <Image
-      source={{ uri: item.uri }}
-      style={StyleSheet.absoluteFillObject}
-      resizeMode="contain"
-      onLoad={(e) => {
-        const { width, height } = e.nativeEvent.source;
-        setImageDimensions({ width, height });
-      }}
-    />
+    <View style={styles.imageContainer}> 
+      {hasLoadFailed ? (
+        <View style={styles.errorContainer}>
+          <FontAwesome name="exclamation-circle" size={40} color="#888" />
+          <Text style={styles.errorText}>無法載入圖片</Text>
+        </View>
+      ) : (
+        <Image
+          source={{ uri: item.uri }}
+          style={StyleSheet.absoluteFillObject} // Keep this for AwesomeGallery layout
+          contentFit="contain"
+          cachePolicy="memory-disk" // Add caching
+          transition={200} // Add transition
+          onLoad={handleLoad} // Use new handler
+          onError={handleError} // Use new handler
+        />
+      )}
+      {isLoading && !hasLoadFailed && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#FFF" />
+        </View>
+      )}
+    </View>
   );
 };
 
@@ -113,7 +143,7 @@ function GalleryModalScreen() {
         <AwesomeGallery
           data={galleryData}
           keyExtractor={(item: GalleryItem) => item.uri}
-          renderItem={GalleryImage}
+          renderItem={GalleryImage} // Pass component directly without cast
           initialIndex={initialIndex}
           onIndexChange={onIndexChange}
           onSwipeToClose={() => router.back()}
@@ -215,5 +245,26 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  imageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000', // Ensure background is black
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent overlay
+  },
+  errorContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#aaa',
+    marginTop: 10,
+    fontSize: 16,
   },
 }); 

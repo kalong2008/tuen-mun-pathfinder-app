@@ -17,7 +17,7 @@ import {
 // Constants
 const BASE_URL = 'https://tuenmunpathfinder.com';
 const GALLERIES_API_ENDPOINT = `${BASE_URL}/api/photo-links`;
-const THUMBNAIL_SIZE = 100; // Size in pixels for optimized thumbnails
+const THUMBNAIL_SIZE = 50; // Size in pixels for optimized thumbnails
 
 // Structure for data received from the API
 interface ApiGalleryItem {
@@ -33,18 +33,21 @@ interface GalleryInfo {
   urlPrefix: string;
   thumbnailUri: string;
   fallbackThumbnailUri: string;
-  optimizedThumbnailUri: string;
-  optimizedFallbackThumbnailUri: string;
+  // These seem unused, consider removing if not planned for optimization
+  // optimizedThumbnailUri: string; 
+  // optimizedFallbackThumbnailUri: string;
   blurhash?: string; // Optional: Add blurhash property
 }
 
 // Removed the hardcoded availableGalleries array
 
 // Create a separate component for the gallery item
-const GalleryItem = ({ item, onPress }: { item: GalleryInfo; onPress: () => void }) => {
+// Wrap with React.memo
+const GalleryItem = React.memo(({ item, onPress }: { item: GalleryInfo; onPress: () => void }) => {
   const [currentUri, setCurrentUri] = React.useState(item.thumbnailUri);
   const [isImageLoading, setIsImageLoading] = React.useState(true);
   const [isFallback, setIsFallback] = React.useState(false);
+  const [hasLoadFailed, setHasLoadFailed] = React.useState(false); // Track total failure
 
   // Preload the fallback image when component mounts
   React.useEffect(() => {
@@ -54,33 +57,51 @@ const GalleryItem = ({ item, onPress }: { item: GalleryInfo; onPress: () => void
   }, [item.fallbackThumbnailUri]);
 
   const handleError = React.useCallback(() => {
-    console.log(`Failed to load thumbnail ${currentUri}`);
-    if (currentUri === item.thumbnailUri && item.fallbackThumbnailUri) {
-      console.log(`Trying fallback thumbnail ${item.fallbackThumbnailUri}`);
+    // console.log(`Failed to load thumbnail ${currentUri}`);
+    if (!isFallback && item.fallbackThumbnailUri) {
+      // console.log(`Trying fallback thumbnail ${item.fallbackThumbnailUri}`);
       setIsFallback(true);
       setCurrentUri(item.fallbackThumbnailUri);
-      setIsImageLoading(true); // Reset loading state for fallback attempt
+      // Keep loading true for fallback attempt
+      setIsImageLoading(true); 
+    } else {
+      // Fallback also failed or no fallback exists
+      setHasLoadFailed(true);
+      setIsImageLoading(false); // Stop loading indicator on final failure
     }
-  }, [currentUri, item.thumbnailUri, item.fallbackThumbnailUri]);
+  }, [isFallback, item.fallbackThumbnailUri]);
+
+  const handleLoad = React.useCallback(() => {
+    setIsImageLoading(false);
+    setHasLoadFailed(false); // Reset failure state on successful load (e.g., if URI changes)
+  }, []);
 
   return (
     <TouchableOpacity
       style={styles.itemContainer}
       onPress={onPress}
+      disabled={hasLoadFailed} // Optionally disable press if image failed
     >
       <View style={styles.thumbnailContainer}>
-        <Image 
-          source={{ uri: currentUri }} 
-          placeholder={item.blurhash ?? 'LKN]Rv%2Tw=w]~RBVZRi};RPxuwH'} // Generic placeholder
-          placeholderContentFit="cover"
-          style={styles.thumbnail}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="memory-disk"
-          onLoad={() => setIsImageLoading(false)}
-          onError={handleError}
-        />
-        {isImageLoading && !isFallback && (
+        {hasLoadFailed ? (
+          <View style={styles.errorPlaceholder}>
+            <FontAwesome name="exclamation-triangle" size={THUMBNAIL_SIZE * 0.5} color="#888" />
+          </View>
+        ) : (
+          <Image
+            source={{ uri: currentUri }}
+            placeholder={item.blurhash ?? 'LKN]Rv%2Tw=w]~RBVZRi};RPxuwH'} // Generic placeholder
+            placeholderContentFit="cover"
+            style={styles.thumbnail}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+            onLoad={handleLoad} // Use centralized load handler
+            onError={handleError}
+          />
+        )}
+        {/* Show loading indicator only when loading and not in failed state */}
+        {isImageLoading && !hasLoadFailed && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="small" color="#666" />
           </View>
@@ -89,7 +110,9 @@ const GalleryItem = ({ item, onPress }: { item: GalleryInfo; onPress: () => void
       <Text style={styles.itemText}>{item.name}</Text>
     </TouchableOpacity>
   );
-};
+}); // End of React.memo
+
+GalleryItem.displayName = 'GalleryItem'; // Add display name
 
 export default function GalleriesListScreen() {
   const router = useRouter();
@@ -98,15 +121,13 @@ export default function GalleriesListScreen() {
   const [galleries, setGalleries] = React.useState<GalleryInfo[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [visibleStartIndex, setVisibleStartIndex] = React.useState(0);
-  const [visibleEndIndex, setVisibleEndIndex] = React.useState(10);
   const loadingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Preload images for the next set of items
-  const preloadImages = React.useCallback((start: number, end: number) => {
-    if (!galleries.length) return;
+  const preloadImages = React.useCallback((galleriesToPreload: GalleryInfo[], start: number, end: number) => {
+    if (!galleriesToPreload.length) return; // Use parameter
     
-    const itemsToPreload = galleries.slice(start, end);
+    const itemsToPreload = galleriesToPreload.slice(start, end); // Use parameter
     itemsToPreload.forEach(item => {
       if (!item?.thumbnailUri) return;
       
@@ -138,7 +159,7 @@ export default function GalleriesListScreen() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data: { galleries: ApiGalleryItem[] } = await response.json();
-        console.log('API Response:', data);
+        // console.log('API Response:', data);
 
         const transformedData = data.galleries
           .map((item) => {
@@ -166,7 +187,7 @@ export default function GalleriesListScreen() {
         
         // Preload initial set of images after state update
         setTimeout(() => {
-          preloadImages(0, 10);
+          preloadImages(reversedData, 0, 10); // Pass fetched data
         }, 0);
       } catch (err) {
         console.error("Failed to fetch galleries list:", err);
@@ -194,21 +215,18 @@ export default function GalleriesListScreen() {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [isSignedIn]); // Remove preloadImages dependency
+  }, [isSignedIn]); // No need for preloadImages dependency now
 
   const handleViewableItemsChanged = React.useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
-      const startIndex = viewableItems[0].index;
       const endIndex = viewableItems[viewableItems.length - 1].index;
-      setVisibleStartIndex(startIndex);
-      setVisibleEndIndex(endIndex);
       
       // Preload next set of images
       const nextStart = Math.min(endIndex + 1, galleries.length);
       const nextEnd = Math.min(nextStart + 10, galleries.length);
-      preloadImages(nextStart, nextEnd);
+      preloadImages(galleries, nextStart, nextEnd); // Pass current galleries state
     }
-  }, [galleries, preloadImages]);
+  }, [galleries]); // Remove preloadImages dependency
 
   const renderItem = ({ item }: { item: GalleryInfo }) => (
     <GalleryItem
@@ -311,14 +329,26 @@ const styles = StyleSheet.create({
   },
   thumbnailContainer: {
     position: 'relative',
-    width: 50,
-    height: 50,
-    marginRight: 15, // Increased from 15 to 20
+    width: THUMBNAIL_SIZE, // Use constant
+    height: THUMBNAIL_SIZE, // Use constant
+    marginRight: 15,
+    backgroundColor: '#eee', // Background for container
+    borderRadius: 4,
+    justifyContent: 'center', // Center error icon
+    alignItems: 'center',     // Center error icon
+    overflow: 'hidden', // Ensure image corners are rounded if container has borderRadius
   },
   thumbnail: {
-    width: 50, 
-    height: 50,
-    borderRadius: 4, 
+    width: THUMBNAIL_SIZE, // Use constant
+    height: THUMBNAIL_SIZE, // Use constant
+    // Removed borderRadius here, applied to container now
+  },
+  errorPlaceholder: { // Style for the error state
+    width: THUMBNAIL_SIZE,
+    height: THUMBNAIL_SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#e0e0e0', // Different background for error
   },
   itemText: {
     fontSize: 16,
@@ -377,5 +407,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 4, // Match container borderRadius
   },
 }); 

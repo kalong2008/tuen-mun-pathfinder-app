@@ -4,12 +4,15 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+// Import Expo Image and FontAwesome
+import { FontAwesome } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { APP_COLORS } from './constants/colors';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width / 3; // Adjust number of columns (3 here)
@@ -28,6 +31,55 @@ interface GalleryItem {
   originalWidth: number;
   originalHeight: number;
 }
+
+// Create a memoized component for each grid item
+const GridImageItem = React.memo(({ item, index, onPress }: { item: GalleryItem; index: number; onPress: (index: number) => void }) => {
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [hasLoadFailed, setHasLoadFailed] = React.useState(false);
+
+  const handlePress = React.useCallback(() => {
+    if (!hasLoadFailed) {
+      onPress(index);
+    }
+  }, [index, onPress, hasLoadFailed]);
+
+  const handleLoad = React.useCallback(() => {
+    setIsLoading(false);
+    setHasLoadFailed(false);
+  }, []);
+
+  const handleError = React.useCallback(() => {
+    // No fallback logic here based on API structure
+    setIsLoading(false);
+    setHasLoadFailed(true);
+  }, []);
+
+  return (
+    <TouchableOpacity onPress={handlePress} style={styles.imageContainer} disabled={hasLoadFailed}>
+      {hasLoadFailed ? (
+        <View style={styles.errorPlaceholder}>
+          <FontAwesome name="exclamation-triangle" size={IMAGE_SIZE * 0.5} color="#888" />
+        </View>
+      ) : (
+        <Image
+          source={{ uri: item.uri }}
+          style={styles.image}
+          contentFit="cover"
+          cachePolicy="memory-disk" // Ensure caching
+          transition={100} // Shorter transition for grid
+          onLoad={handleLoad}
+          onError={handleError}
+        />
+      )}
+      {isLoading && !hasLoadFailed && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="small" color="#666" />
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
+GridImageItem.displayName = 'GridImageItem';
 
 export default function GalleryGridScreen() {
   const router = useRouter();
@@ -79,20 +131,23 @@ export default function GalleryGridScreen() {
     // Add dependencies to re-run effect if parameters change
   }, [apiEndpoint, urlPrefix]);
 
+  // Function to handle press, passed to GridImageItem
+  const handleImagePress = React.useCallback((index: number) => {
+    router.push({
+      pathname: 'galleryModal' as any,
+      params: {
+        images: JSON.stringify(galleryData.map(img => img.uri)),
+        index: index.toString(), // Ensure index is passed as string
+      },
+    });
+  }, [router, galleryData]);
+
   const renderItem = ({ item, index }: { item: GalleryItem, index: number }) => (
-    <TouchableOpacity
-      onPress={() =>
-        router.push({
-          pathname: 'galleryModal' as any,
-          params: {
-            images: JSON.stringify(galleryData.map(img => img.uri)),
-            index: index.toString(), // Ensure index is passed as string
-          },
-        })
-      }
-    >
-      <Image source={{ uri: item.uri }} style={styles.image} />
-    </TouchableOpacity>
+    <GridImageItem 
+      item={item} 
+      index={index} 
+      onPress={handleImagePress} 
+    />
   );
 
   if (isLoading) {
@@ -120,7 +175,15 @@ export default function GalleryGridScreen() {
         options={{ 
           title: galleryTitle ?? 'Gallery', 
           //headerBackTitle: '', // Use empty string
-          headerBackButtonDisplayMode: "minimal"
+          headerBackButtonDisplayMode: "minimal",
+          headerTitleAlign: "center",
+          headerStyle: {
+            backgroundColor: APP_COLORS.BACKGROUND,
+          },
+          headerTitleStyle: {
+            fontSize: 17, // Default iOS size, adjust as needed
+            fontWeight: '600', // Default iOS weight, adjust as needed
+          },
         }} 
       />
       <FlatList
@@ -129,6 +192,7 @@ export default function GalleryGridScreen() {
         keyExtractor={(item) => item.id}
         numColumns={3}
         contentContainerStyle={styles.listContainer}
+        style={{ width: '100%' }}
       />
     </View>
   );
@@ -146,11 +210,35 @@ const styles = StyleSheet.create({
   listContainer: {
     // Optional: Add padding if needed
   },
-  image: {
+  imageContainer: { // Added container for positioning overlay/error
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
+    position: 'relative',
+    backgroundColor: '#eee', // Background for loading/error states
     borderWidth: 1,
     borderColor: '#eee',
+  },
+  image: {
+    width: '100%', // Fill container
+    height: '100%', // Fill container
+    // Removed border styles, handled by container
+  },
+  errorPlaceholder: { // Style for the error state
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#e0e0e0',
+  },
+  loadingOverlay: { // Style for loading indicator
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
   },
   errorText: {
     color: 'red',
