@@ -41,3 +41,6 @@ app-example
 # Native builds
 /android
 /ios
+
+# Google Service Account
+google-service-account.json
