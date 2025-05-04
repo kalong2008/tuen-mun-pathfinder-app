@@ -215,7 +215,7 @@ export default function GalleriesListScreen() {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [isSignedIn]); // No need for preloadImages dependency now
+  }, [isSignedIn, preloadImages]); // Add preloadImages back to dependency array
 
   const handleViewableItemsChanged = React.useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
@@ -226,7 +226,7 @@ export default function GalleriesListScreen() {
       const nextEnd = Math.min(nextStart + 10, galleries.length);
       preloadImages(galleries, nextStart, nextEnd); // Pass current galleries state
     }
-  }, [galleries]); // Remove preloadImages dependency
+  }, [galleries, preloadImages]); // Add preloadImages back to dependency array
 
   const renderItem = ({ item }: { item: GalleryInfo }) => (
     <GalleryItem
