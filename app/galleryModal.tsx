@@ -230,7 +230,7 @@ function GalleryModalScreen() {
           <Button
             label="登入"
             onPress={() =>
-              router.push(`/(auth)/sign-in?redirect_url=${encodeURIComponent('/gallery')}`)
+              router.push(`/sign-in?redirect_url=${encodeURIComponent('/gallery')}`)
             }
           />
         </View>

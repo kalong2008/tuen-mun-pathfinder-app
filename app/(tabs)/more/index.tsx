@@ -1,5 +1,5 @@
 import { SignedIn, SignedOut, useClerk, useUser } from '@clerk/clerk-expo';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ScalePressable } from '@/components/ui/ScalePressable';
@@ -56,7 +56,6 @@ export default function MoreScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: '更多' }} />
 
       <View style={styles.grid}>
         {items.map((item) => (
@@ -105,7 +104,7 @@ export default function MoreScreen() {
           <ScalePressable
             style={[styles.accountButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
             onPress={() =>
-              router.push(`/(auth)/sign-in?redirect_url=${encodeURIComponent('/(tabs)/more')}`)
+              router.push(`/sign-in?redirect_url=${encodeURIComponent('/(tabs)/more')}`)
             }
           >
             <Text style={[styles.accountButtonText, { color: '#FFFFFF' }]}>登入</Text>

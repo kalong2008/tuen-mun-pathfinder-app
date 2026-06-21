@@ -38,20 +38,17 @@ function PopoverMenuItem({ label, onPress, destructive = false }: PopoverMenuIte
   );
 }
 
-export function HomeHeaderActions() {
+export function HomeHeaderLogin() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const { user } = useUser();
   const { signOut } = useClerk();
-  const { openNav } = useHomeMenu();
 
   const profileAnchorRef = useRef<View>(null);
-
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileAnchor, setProfileAnchor] = useState<PopoverAnchor | null>(null);
 
   const displayName = user?.firstName || user?.username || '會員';
-
   const closeProfile = () => setProfileOpen(false);
 
   const openProfileMenu = () => {
@@ -63,58 +60,44 @@ export function HomeHeaderActions() {
 
   return (
     <>
-      <View style={styles.actionsRow}>
-        <SignedOut>
-          <Pressable
-            onPress={() =>
-              router.push(`/(auth)/sign-in?redirect_url=${encodeURIComponent('/(tabs)/')}`)
-            }
-            style={({ pressed }) => [
-              styles.loginButton,
-              {
-                backgroundColor: colors.primarySoft,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Text style={[styles.loginButtonText, { color: colors.text }]}>登入</Text>
-          </Pressable>
-        </SignedOut>
-
-        <SignedIn>
-          <View style={styles.profileRow}>
-            <View ref={profileAnchorRef} collapsable={false}>
-              <Pressable
-                onPress={openProfileMenu}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel="帳戶選單"
-                style={({ pressed }) => [
-                  styles.profileIconButton,
-                  { backgroundColor: colors.primarySoft, opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <IconSymbol name="person.fill" size={18} color={colors.primary} />
-              </Pressable>
-            </View>
-            <Text style={[styles.profileName, { color: colors.text }]} numberOfLines={1}>
-              {displayName}
-            </Text>
-          </View>
-        </SignedIn>
-
+      <SignedOut>
         <Pressable
-          onPress={openNav}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel="開啟選單"
-          style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={() =>
+            router.push(`/sign-in?redirect_url=${encodeURIComponent('/(tabs)/')}`)
+          }
+          style={({ pressed }) => [
+            styles.loginButton,
+            {
+              backgroundColor: colors.primarySoft,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
         >
-          <IconSymbol name="line.3.horizontal" size={22} color={colors.text} />
+          <Text style={[styles.loginButtonText, { color: colors.text }]}>登入</Text>
         </Pressable>
-      </View>
+      </SignedOut>
 
       <SignedIn>
+        <View style={styles.profileRow}>
+          <View ref={profileAnchorRef} collapsable={false}>
+            <Pressable
+              onPress={openProfileMenu}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="帳戶選單"
+              style={({ pressed }) => [
+                styles.profileIconButton,
+                { backgroundColor: colors.primarySoft, opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <IconSymbol name="person.fill" size={18} color={colors.primary} />
+            </Pressable>
+          </View>
+          <Text style={[styles.profileName, { color: colors.text }]} numberOfLines={1}>
+            {displayName}
+          </Text>
+        </View>
+
         <FloatingPopover visible={profileOpen} anchor={profileAnchor} onClose={closeProfile}>
           <PopoverMenuItem
             label="登出"
@@ -132,12 +115,24 @@ export function HomeHeaderActions() {
   );
 }
 
+export function HomeHeaderMenuButton() {
+  const { colors } = useAppTheme();
+  const { openNav } = useHomeMenu();
+
+  return (
+    <Pressable
+      onPress={openNav}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel="開啟選單"
+      style={({ pressed }) => [styles.iconButton, { opacity: pressed ? 0.7 : 1 }]}
+    >
+      <IconSymbol name="line.3.horizontal" size={22} color={colors.text} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
   iconButton: {
     width: 32,
     height: 32,

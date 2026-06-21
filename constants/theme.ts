@@ -78,6 +78,7 @@ export function getThemeColors(scheme: ColorScheme) {
     overlay: 'rgba(27, 67, 50, 0.55)',
     tabBar: scheme === 'light' ? '#FFFFFF' : '#0D1B14',
     tabBarBorder: scheme === 'light' ? '#D4CFC4' : '#243B2E',
+    photosChrome: scheme === 'light' ? 'rgba(60, 60, 67, 0.6)' : 'rgba(44, 44, 46, 0.72)',
   };
 }
 

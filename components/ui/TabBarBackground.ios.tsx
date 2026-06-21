@@ -1,7 +1,7 @@
-import { useBottomTabBarHeight } from 'expo-router/js-tabs';
-import { BlurView } from 'expo-blur';
-import { StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from "expo-blur";
+import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function BlurTabBarBackground() {
   return (

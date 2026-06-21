@@ -63,8 +63,14 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false, headerTitleAlign: 'center' }} />
         <Stack.Screen
-          name="(auth)"
-          options={{ title: '', headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }}
+          name="sign-in"
+          options={{
+            headerShown: false,
+            presentation: 'formSheet',
+            sheetAllowedDetents: [1],
+            sheetGrabberVisible: true,
+            contentStyle: { flex: 1 },
+          }}
         />
         <Stack.Screen
           name="gallery"

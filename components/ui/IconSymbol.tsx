@@ -34,6 +34,7 @@ const MAPPING: Record<string, ComponentProps<typeof MaterialIcons>['name']> = {
   'rectangle.portrait.and.arrow.right': 'crop-portrait',
   'checkmark': 'check',
   'line.3.horizontal': 'menu',
+  'line.3.horizontal.decrease': 'tune',
   'person.fill': 'person',
   'xmark': 'close',
   'envelope.badge.fill': 'mark-email-read',
@@ -43,6 +44,7 @@ const MAPPING: Record<string, ComponentProps<typeof MaterialIcons>['name']> = {
   'clock.fill': 'access-time',
   'bookmark.fill': 'bookmark',
   'gearshape.fill': 'settings',
+  'line.3.horizontal.decrease.circle': 'tune',
 };
 
 // Define the allowed icon names from our mapping

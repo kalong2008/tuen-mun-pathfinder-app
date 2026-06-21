@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import React, { useCallback, useMemo } from 'react';
 import {
   Platform,
@@ -14,9 +14,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScalePressable } from '@/components/ui/ScalePressable';
-import { Screen } from '@/components/ui/Screen';
 import { useNotificationInbox } from '@/contexts/NotificationInboxContext';
 import { radius, spacing, typography } from '@/constants/theme';
+import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import {
   normalizeNotificationScreenPath,
@@ -95,6 +95,7 @@ function groupNotifications(notifications: InboxNotification[]): NotificationSec
 
 export default function NotificationsScreen() {
   const { colors } = useAppTheme();
+  const tabScrollProps = useNativeTabScrollProps();
   const router = useRouter();
   const {
     notifications,
@@ -170,11 +171,10 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <Screen scroll={false} padded={false} edges={[]}>
-      <Stack.Screen options={{ title: '通知' }} />
-
-      <SectionList
-        sections={sections}
+    <SectionList
+      {...tabScrollProps}
+      style={styles.list}
+      sections={sections}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         renderSectionHeader={renderSectionHeader}
@@ -245,11 +245,13 @@ export default function NotificationsScreen() {
           />
         }
       />
-    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  list: {
+    flex: 1,
+  },
   listContent: {
     padding: spacing.lg,
     paddingBottom: Platform.OS === 'ios' ? 100 : 80,

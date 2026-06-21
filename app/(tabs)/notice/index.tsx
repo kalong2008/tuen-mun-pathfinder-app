@@ -1,4 +1,3 @@
-import { Stack } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Platform,
@@ -12,15 +11,15 @@ import {
 import { NoticeListItem } from '@/components/notice/NoticeListItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingView } from '@/components/ui/LoadingView';
-import { Screen } from '@/components/ui/Screen';
 import { radius, spacing, TARGET_COLORS, typography } from '@/constants/theme';
+import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { API } from '@/lib/api';
 import {
   groupNoticesForTimeline,
   type NoticeItem,
 } from '@/lib/notice-utils';
-import NoticeDetailModal from '../noticeDetailModal';
+import NoticeDetailModal from '../../noticeDetailModal';
 
 function ColorLegend() {
   const { colors } = useAppTheme();
@@ -44,6 +43,7 @@ function ColorLegend() {
 
 export default function NoticeScreen() {
   const { colors } = useAppTheme();
+  const tabScrollProps = useNativeTabScrollProps();
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,58 +104,67 @@ export default function NoticeScreen() {
     );
   };
 
-  return (
-    <Screen scroll={false} padded={false} edges={[]}>
-      <Stack.Screen options={{ title: '通告' }} />
+  if (loading) {
+    return <LoadingView message="載入通告…" />;
+  }
 
-      {loading ? (
-        <LoadingView message="載入通告…" />
-      ) : loadError ? (
-        <EmptyState
-          icon={<Text style={styles.errorIcon}>!</Text>}
-          title="載入失敗"
-          description={loadError}
-          actionLabel="重試"
-          onAction={handleRefresh}
-        />
-      ) : sections.length === 0 ? (
-        <EmptyState
-          icon={<Text style={styles.errorIcon}>📋</Text>}
-          title="暫無通告"
-          description="目前沒有活動通告"
-        />
-      ) : (
-        <>
-          <ColorLegend />
-          <SectionList
-            sections={sections}
-            renderItem={renderNoticeItem}
-            renderSectionHeader={renderSectionHeader}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor={colors.primary}
-              />
-            }
-            stickySectionHeadersEnabled={false}
+  if (loadError) {
+    return (
+      <EmptyState
+        icon={<Text style={styles.errorIcon}>!</Text>}
+        title="載入失敗"
+        description={loadError}
+        actionLabel="重試"
+        onAction={handleRefresh}
+      />
+    );
+  }
+
+  if (sections.length === 0) {
+    return (
+      <EmptyState
+        icon={<Text style={styles.errorIcon}>📋</Text>}
+        title="暫無通告"
+        description="目前沒有活動通告"
+      />
+    );
+  }
+
+  return (
+    <>
+      <SectionList
+        {...tabScrollProps}
+        style={styles.list}
+        sections={sections}
+        renderItem={renderNoticeItem}
+        renderSectionHeader={renderSectionHeader}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListHeaderComponent={<ColorLegend />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
           />
-        </>
-      )}
+        }
+        stickySectionHeadersEnabled={false}
+      />
 
       <NoticeDetailModal
         visible={modalVisible}
         notice={selectedNotice}
         onClose={() => setModalVisible(false)}
       />
-    </Screen>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  list: {
+    flex: 1,
+  },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',

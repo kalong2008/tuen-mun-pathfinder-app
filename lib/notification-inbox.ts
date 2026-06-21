@@ -89,7 +89,7 @@ export function normalizeNotificationScreenPath(screen: string): string {
   const trimmed = screen.trim();
   if (!trimmed) return '/(tabs)/notifications';
 
-  if (trimmed.startsWith('/(tabs)/') || trimmed.startsWith('/(auth)/')) {
+  if (trimmed.startsWith('/(tabs)/') || trimmed.startsWith('/sign-in')) {
     return trimmed;
   }
 

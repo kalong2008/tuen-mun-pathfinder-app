@@ -1,5 +1,5 @@
 import { API } from '@/lib/api';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
@@ -9,6 +9,7 @@ import { LoadingView } from '@/components/ui/LoadingView';
 import { ScalePressable } from '@/components/ui/ScalePressable';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { radius, spacing, typography } from '@/constants/theme';
+import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import {
   getCombinedMonthActivities,
@@ -129,6 +130,7 @@ function ActivityRow({
 export default function CalendarScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const tabScrollProps = useNativeTabScrollProps();
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().split('T')[0]);
   const [activities, setActivities] = useState<ActivitiesByDate>({});
   const [loading, setLoading] = useState(true);
@@ -185,16 +187,18 @@ export default function CalendarScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Stack.Screen options={{ title: '活動' }} />
         <LoadingView message="載入活動…" />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: '活動' }} />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      {...tabScrollProps}
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
         <SectionHeader title="即將舉行" />
         {upcoming.length > 0 ? (
           upcoming.map((item) => (
@@ -258,7 +262,6 @@ export default function CalendarScreen() {
           </Card>
         ) : null}
       </ScrollView>
-    </View>
   );
 }
 

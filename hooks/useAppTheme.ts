@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
-import { ColorScheme, getThemeColors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { getThemeColors } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/useColorScheme";
 
 export function useAppTheme() {
   const scheme = useColorScheme();
   const colors = useMemo(() => getThemeColors(scheme), [scheme]);
 
-  return { scheme, colors, isDark: scheme === 'dark' };
+  return { scheme, colors, isDark: scheme === "dark" };
 }

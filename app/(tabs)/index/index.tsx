@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 
 import { NoticeListItem } from '@/components/notice/NoticeListItem';
+import { AppLogo } from '@/components/AppLogo';
+import { HomeHeaderLogin, HomeHeaderMenuButton } from '@/components/HomeHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ClubCard } from '@/components/ui/ClubCard';
@@ -17,6 +19,7 @@ import { ScalePressable } from '@/components/ui/ScalePressable';
 import { Screen } from '@/components/ui/Screen';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { spacing, TARGET_COLORS, typography } from '@/constants/theme';
+import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { API } from '@/lib/api';
 import {
@@ -58,6 +61,7 @@ function getClubColor(club: 'PATHFINDER' | 'ADVENTURER'): string {
 export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const tabScrollProps = useNativeTabScrollProps();
 
   const [dailyVerse, setDailyVerse] = useState<DailyVerse | null>(null);
   const [verseLoading, setVerseLoading] = useState(true);
@@ -116,12 +120,14 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <Screen scroll={false} padded={false} edges={[]}>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+    <Screen scroll={false} padded={false} edges={['top']}>
+      <View collapsable={false} style={styles.screenRoot}>
+        <ScrollView
+          {...tabScrollProps}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
         <View style={styles.heroWrap}>
           <HeroBanner
             fullBleed
@@ -230,12 +236,51 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
       </ScrollView>
+
+        <View
+          pointerEvents="box-none"
+          style={[styles.headerOverlay, styles.headerBar, { backgroundColor: colors.background }]}
+        >
+          <AppLogo />
+          <View style={styles.headerActions}>
+            <HomeHeaderLogin />
+            <HomeHeaderMenuButton />
+          </View>
+        </View>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  headerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 44,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
   scrollContent: {
+    paddingTop: 44 + spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
