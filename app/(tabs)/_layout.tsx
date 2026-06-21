@@ -1,82 +1,173 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
-import { Colors } from '@/app/constants/colors';
+import { AppLogo } from '@/components/AppLogo';
+import { HomeHeaderActions } from '@/components/HomeHeader';
+import { HomeMenuDrawer } from '@/components/HomeMenuDrawer';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { spacing } from '@/constants/theme';
+import { useNotificationInbox } from '@/contexts/NotificationInboxContext';
+import { useAppTheme } from '@/hooks/useAppTheme';
 
-function TabLayout() {
-  const colorScheme = useColorScheme();
+function TabIcon({
+  filledName,
+  outlineName,
+  color,
+  focused,
+}: {
+  filledName: Parameters<typeof IconSymbol>[0]['name'];
+  outlineName: Parameters<typeof IconSymbol>[0]['name'];
+  color: string;
+  focused: boolean;
+}) {
+  const { colors } = useAppTheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        headerTitleAlign: 'center',
-        headerStyle: {
-          backgroundColor: Colors[colorScheme ?? 'light'].background,
-          height: Platform.OS === 'android' ? 56 : undefined,
-        },
-        headerTintColor: Colors[colorScheme ?? 'light'].text,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: '首頁',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
+    <View style={[styles.iconWrap, focused && { backgroundColor: colors.primarySoft }]}>
+      <IconSymbol
+        size={22}
+        name={focused ? filledName : outlineName}
+        color={focused ? colors.primary : color}
       />
-      <Tabs.Screen
-        name="galleries"
-        options={{
-          title: '相簿',
-          tabBarLabel: '相簿',
-          headerShown: true,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="photo.stack.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          title: '活動',
-          tabBarLabel: '活動',
-          headerShown: true,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="notice"
-        options={{
-          title: '通告',
-          tabBarLabel: '通告',
-          headerShown: true,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bell.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="contact"
-        options={{
-          title: '聯絡我們',
-          tabBarLabel: '聯絡',
-          headerShown: true,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="envelope.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+    </View>
   );
 }
+
+function TabLayout() {
+  const { colors } = useAppTheme();
+  const { unreadCount } = useNotificationInbox();
+
+  return (
+    <HomeMenuDrawer>
+      <Tabs
+          screenOptions={{
+            tabBarActiveTintColor: colors.primary,
+            tabBarInactiveTintColor: colors.muted,
+            headerShown: true,
+            headerShadowVisible: false,
+            headerStyle: {
+              backgroundColor: colors.background,
+            },
+            headerTintColor: colors.text,
+            headerTitleAlign: 'center',
+            headerTitleStyle: styles.headerTitle,
+            tabBarButton: HapticTab,
+            tabBarStyle: {
+              backgroundColor: colors.tabBar,
+              borderTopColor: colors.tabBarBorder,
+              borderTopWidth: StyleSheet.hairlineWidth,
+              height: Platform.OS === 'ios' ? 88 : 64,
+              paddingTop: spacing.xs,
+            },
+            tabBarLabelStyle: styles.tabLabel,
+          }}>
+          <Tabs.Screen
+            name="index"
+            options={{
+              title: '',
+              headerTitle: '',
+              headerLeft: () => <AppLogo />,
+              headerRight: () => <HomeHeaderActions />,
+              headerLeftContainerStyle: styles.homeHeaderSide,
+              headerRightContainerStyle: styles.homeHeaderSide,
+              tabBarLabel: '首頁',
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon
+                  filledName="house.fill"
+                  outlineName="house"
+                  color={String(color)}
+                  focused={focused}
+                />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="calendar"
+            options={{
+              title: '活動',
+              tabBarLabel: '活動',
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon
+                  filledName="calendar.circle.fill"
+                  outlineName="calendar"
+                  color={String(color)}
+                  focused={focused}
+                />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="notice"
+            options={{
+              title: '通告',
+              tabBarLabel: '通告',
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon
+                  filledName="doc.text.fill"
+                  outlineName="doc.text"
+                  color={String(color)}
+                  focused={focused}
+                />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="galleries"
+            options={{
+              title: '相簿',
+              tabBarLabel: '相簿',
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon
+                  filledName="photo.stack.fill"
+                  outlineName="photo.stack"
+                  color={String(color)}
+                  focused={focused}
+                />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="notifications"
+            options={{
+              title: '通知',
+              tabBarLabel: '通知',
+              tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+              tabBarIcon: ({ color, focused }) => (
+                <TabIcon
+                  filledName="bell.fill"
+                  outlineName="bell"
+                  color={String(color)}
+                  focused={focused}
+                />
+              ),
+            }}
+          />
+          <Tabs.Screen name="more" options={{ href: null }} />
+        </Tabs>
+    </HomeMenuDrawer>
+  );
+}
+
+const styles = StyleSheet.create({
+  homeHeaderSide: {
+    paddingHorizontal: spacing.lg,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  tabLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  iconWrap: {
+    width: 40,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 export default TabLayout;

@@ -11,20 +11,38 @@ import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
  * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
  */
 const MAPPING: Record<string, ComponentProps<typeof MaterialIcons>['name']> = {
+  'house': 'home',
   'house.fill': 'home',
+  'photo.stack': 'collections',
   'photo.stack.fill': 'photo-library',
   'calendar': 'calendar-today',
+  'calendar.circle.fill': 'event',
+  'bell': 'notifications-none',
   'bell.fill': 'notifications',
+  'doc.text': 'description',
+  'doc.text.fill': 'article',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'chevron.left': 'chevron-left',
   'envelope.fill': 'email',
+  'ellipsis.circle.fill': 'more-horiz',
+  'square.grid.2x2.fill': 'apps',
+  'list.bullet': 'format-list-bulleted',
+  'chevron.down': 'keyboard-arrow-down',
+  'arrow.up.arrow.down': 'swap-vert',
+  'rectangle.portrait.and.arrow.right': 'crop-portrait',
+  'checkmark': 'check',
+  'line.3.horizontal': 'menu',
+  'person.fill': 'person',
+  'xmark': 'close',
   'envelope.badge.fill': 'mark-email-read',
   'info.circle.fill': 'info',
   'location.fill': 'location-on',
   'phone.fill': 'phone',
   'clock.fill': 'access-time',
   'bookmark.fill': 'bookmark',
+  'gearshape.fill': 'settings',
 };
 
 // Define the allowed icon names from our mapping

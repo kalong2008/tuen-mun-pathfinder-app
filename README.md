@@ -1,50 +1,65 @@
-# Welcome to your Expo app 👋
+# Tuen Mun Pathfinder Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo React Native app for [tuenmunpathfinder.com](https://tuenmunpathfinder.com).
 
-## Get started
+## Features
 
-1. Install dependencies
+| Tab | Auth |
+|-----|------|
+| 首頁 — dashboard (verse, next event, notices) | Public |
+| 活動 — upcoming list + calendar | Public |
+| 通告 — parent notices & PDFs | Public |
+| 更多 — 通知, 相簿, 聯絡, 登入 | Public |
+
+Hidden stack routes under tabs: **通知**, **相簿** (Clerk login), **聯絡**.
+
+Push notifications register on app launch via `/api/register-push`. Received notifications appear in the **通知** tab.
+
+## Setup
+
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Copy environment variables:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Set `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` to the same Clerk publishable key used by the [website repo](https://github.com/kalong2008/tuen-mun-pathfinder).
+
+3. Start the dev server:
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## API
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Data is loaded from the production website APIs:
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- `GET /api/calendar` — calendar events
+- `GET /api/notices` — notices
+- `GET /api/photo-links` — gallery list
+- `POST /api/send` — contact form
+- `GET /api/bible/cached` — daily verse on home
 
-## Get a fresh project
+Override the base URL with `EXPO_PUBLIC_API_BASE_URL` for local development against the Next.js site.
 
-When you're ready, run:
+## Design system
+
+Shared UI lives under `components/ui/` and theme tokens under `constants/theme.ts`:
+
+- `Screen`, `Card`, `Button`, `TextField`, `SectionHeader`, `Badge`, `EmptyState`, `LoadingView`, `HeroBanner`, `ClubCard`
+- `useAppTheme()` hook for colors, spacing, and typography
+- Brand colors for 前鋒會 / 幼鋒會 preserved via `TARGET_COLORS`
+
+
+Uses [EAS Build](https://docs.expo.dev/build/introduction/). See `eas.json` for build profiles.
 
 ```bash
-npm run reset-project
+npx eas build --profile development
 ```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

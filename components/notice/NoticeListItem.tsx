@@ -1,0 +1,149 @@
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { ScalePressable } from '@/components/ui/ScalePressable';
+import { radius, spacing, typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import {
+  expandNoticeTargets,
+  formatNoticeDate,
+  isNewNotice,
+  isPastNotice,
+  type NoticeItem,
+} from '@/lib/notice-utils';
+import { getSingleTargetColor, getTargetColor } from '@/lib/target-colors';
+
+type NoticeListItemProps = {
+  notice: NoticeItem;
+  onPress: () => void;
+  /** Home preview uses a tighter layout without activity type. */
+  variant?: 'full' | 'preview';
+};
+
+function NoticeTargetTags({ targets, past }: { targets: string[]; past: boolean }) {
+  const expandedTargets = expandNoticeTargets(targets);
+
+  return (
+    <View style={styles.tagRow}>
+      {expandedTargets.map((target) => {
+        const color = getSingleTargetColor(target, past);
+        return (
+          <View
+            key={target}
+            style={[
+              styles.tag,
+              { backgroundColor: `${color}22`, borderColor: `${color}55` },
+            ]}
+          >
+            <Text style={[styles.tagText, { color }]}>{target}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+export const NoticeListItem = React.memo(function NoticeListItem({
+  notice,
+  onPress,
+  variant = 'full',
+}: NoticeListItemProps) {
+  const { colors } = useAppTheme();
+  const past = isPastNotice(notice.date);
+  const accentColor = getTargetColor(notice.target, past);
+  const showNewBadge = isNewNotice(notice.date) && !past;
+
+  const metaText =
+    variant === 'full'
+      ? `${formatNoticeDate(notice.date)} · ${notice.activityType}`
+      : formatNoticeDate(notice.date);
+
+  return (
+    <ScalePressable
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderLeftColor: accentColor,
+          opacity: past ? 0.72 : 1,
+        },
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.titleRow}>
+        <Text
+          style={[styles.title, { color: colors.text }]}
+          numberOfLines={variant === 'preview' ? 2 : 1}
+        >
+          {notice.title}
+        </Text>
+        {showNewBadge ? (
+          <View style={[styles.newBadge, { backgroundColor: colors.danger }]}>
+            <Text style={styles.newBadgeText}>新</Text>
+          </View>
+        ) : null}
+      </View>
+      <View style={styles.metaRow}>
+        <Text style={[styles.meta, { color: colors.muted }]} numberOfLines={1}>
+          {metaText}
+        </Text>
+        <NoticeTargetTags targets={notice.target} past={past} />
+      </View>
+    </ScalePressable>
+  );
+});
+
+const styles = StyleSheet.create({
+  container: {
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderLeftWidth: 3,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: 2,
+  },
+  title: {
+    ...typography.bodyMedium,
+    flex: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  meta: {
+    ...typography.small,
+    flex: 1,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: spacing.xs,
+  },
+  tag: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 1,
+  },
+  tagText: {
+    ...typography.small,
+  },
+  newBadge: {
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 1,
+  },
+  newBadgeText: {
+    color: '#FFFFFF',
+    ...typography.small,
+    fontWeight: '600',
+  },
+});

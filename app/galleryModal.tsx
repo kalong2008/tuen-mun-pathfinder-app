@@ -1,270 +1,330 @@
 import { SignedIn, SignedOut } from '@clerk/clerk-expo';
-import { FontAwesome } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import * as React from 'react';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import AwesomeGallery, { RenderItemInfo } from 'react-native-awesome-gallery';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Define the expected shape of the image data for the gallery
+import { Button } from '@/components/ui/Button';
+import { radius, spacing, typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/useAppTheme';
+
 type GalleryItem = { uri: string };
 
-// Define constants for safe area
-const SAFE_AREA_TOP = Platform.OS === 'ios' ? 44 : 24;
-
-// Create a separate component for the gallery item
-// Remove React.memo for testing
 const GalleryImage = ({ item, setImageDimensions }: RenderItemInfo<GalleryItem>) => {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [hasLoadFailed, setHasLoadFailed] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadFailed, setHasLoadFailed] = useState(false);
 
-  const handleLoad = React.useCallback((e: any) => {
-    // Get dimensions from expo-image load event
-    const { width, height } = e.source;
-    setImageDimensions({ width, height });
-    setIsLoading(false);
-    setHasLoadFailed(false);
-  }, [setImageDimensions]);
+  const handleLoad = useCallback(
+    (event: { source: { width: number; height: number } }) => {
+      const { width, height } = event.source;
+      setImageDimensions({ width, height });
+      setIsLoading(false);
+      setHasLoadFailed(false);
+    },
+    [setImageDimensions],
+  );
 
-  const handleError = React.useCallback(() => {
-    // No fallback logic here, just mark as failed
+  const handleError = useCallback(() => {
     setIsLoading(false);
     setHasLoadFailed(true);
   }, []);
-  
+
   return (
-    <View style={styles.imageContainer}> 
+    <View style={styles.imageContainer}>
       {hasLoadFailed ? (
         <View style={styles.errorContainer}>
-          <FontAwesome name="exclamation-circle" size={40} color="#888" />
+          <FontAwesome name="exclamation-circle" size={40} color="#95D5B2" />
           <Text style={styles.errorText}>無法載入圖片</Text>
         </View>
       ) : (
         <Image
           source={{ uri: item.uri }}
-          style={StyleSheet.absoluteFillObject} // Keep this for AwesomeGallery layout
+          style={StyleSheet.absoluteFill}
           contentFit="contain"
-          cachePolicy="memory-disk" // Add caching
-          transition={200} // Add transition
-          onLoad={handleLoad} // Use new handler
-          onError={handleError} // Use new handler
+          cachePolicy="memory-disk"
+          transition={280}
+          onLoad={handleLoad}
+          onError={handleError}
         />
       )}
-      {isLoading && !hasLoadFailed && (
+      {isLoading && !hasLoadFailed ? (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#FFF" />
+          <ActivityIndicator size="large" color="#FFFFFF" />
         </View>
-      )}
+      ) : null}
     </View>
   );
 };
 
 function GalleryModalScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ images: string; index: string }>();
-  const top = SAFE_AREA_TOP;
+  const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ images: string; index: string; title?: string }>();
 
-  // Parse the parameters
-  const images = React.useMemo(() => {
+  const images = useMemo(() => {
     try {
       return JSON.parse(params.images ?? '[]') as string[];
-    } catch (e) {
-      console.error('Failed to parse images param:', e);
+    } catch (error) {
+      console.error('Failed to parse images param:', error);
       return [];
     }
   }, [params.images]);
 
-  const initialIndex = React.useMemo(() => {
+  const initialIndex = useMemo(() => {
     const idx = parseInt(params.index ?? '0', 10);
-    return isNaN(idx) ? 0 : idx;
+    return Number.isNaN(idx) ? 0 : idx;
   }, [params.index]);
 
-  // Map the URI strings to the structure expected by the gallery
-  const galleryData = React.useMemo(() => images.map(uri => ({ uri })), [images]);
+  const galleryData = useMemo(() => images.map((uri) => ({ uri })), [images]);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const backdropOpacity = useSharedValue(0);
+  const chromeOpacity = useSharedValue(0);
+  const chromeTranslateY = useSharedValue(12);
 
-  const [currentIndex, setCurrentIndex] = React.useState(initialIndex);
+  useEffect(() => {
+    backdropOpacity.value = withTiming(1, {
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+    });
+    chromeOpacity.value = withDelay(
+      90,
+      withTiming(1, { duration: 240, easing: Easing.out(Easing.cubic) }),
+    );
+    chromeTranslateY.value = withDelay(
+      90,
+      withSpring(0, { damping: 22, stiffness: 280, mass: 0.85 }),
+    );
+  }, [backdropOpacity, chromeOpacity, chromeTranslateY]);
 
-  // Hide header for the modal
-  // Show status bar with light content
-  React.useEffect(() => {
+  useEffect(() => {
     StatusBar.setBarStyle('light-content', true);
     return () => {
-      StatusBar.setBarStyle('dark-content', true); // Reset on unmount
+      StatusBar.setBarStyle('dark-content', true);
     };
   }, []);
 
-  // Sync local state with gallery's internal index
-  const onIndexChange = (index: number) => {
-    setCurrentIndex(index);
-  };
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
 
-  // Download handler for the current image
+  const chromeStyle = useAnimatedStyle(() => ({
+    opacity: chromeOpacity.value,
+    transform: [{ translateY: chromeTranslateY.value }],
+  }));
+
+  const handleClose = useCallback(() => {
+    router.back();
+  }, [router]);
+
   const handleDownload = async () => {
     const currentImageUri = galleryData[currentIndex]?.uri;
     if (!currentImageUri) {
-      Alert.alert('Error', 'Could not find the image URL.');
+      Alert.alert('錯誤', '找不到圖片');
       return;
     }
 
     try {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please grant permission to save images.');
+        Alert.alert('需要權限', '請允許存取相簿以儲存圖片');
         return;
       }
 
       const fileUri = `${FileSystem.cacheDirectory}${Date.now()}.jpg`;
-      Alert.alert('Downloading', 'Saving image to your device...'); // Optional: provide feedback
       const { uri } = await FileSystem.downloadAsync(currentImageUri, fileUri);
       await MediaLibrary.saveToLibraryAsync(uri);
-      Alert.alert('Success', 'Image saved successfully!');
+      Alert.alert('成功', '圖片已儲存到相簿');
     } catch (error) {
       console.error('Error downloading image:', error);
-      Alert.alert('Error', 'Failed to save image.');
+      Alert.alert('錯誤', '無法儲存圖片');
     }
   };
 
+  const topInset = insets.top + spacing.sm;
+  const controlStyle = [styles.controlButton, { top: topInset }];
+
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
-      
+      <Stack.Screen
+        options={{
+          headerShown: false,
+          presentation: 'transparentModal',
+          animation: 'fade',
+          contentStyle: { backgroundColor: 'transparent' },
+        }}
+      />
+
       <SignedIn>
+        <Animated.View style={[styles.backdrop, backdropStyle]} />
+
         <AwesomeGallery
           data={galleryData}
           keyExtractor={(item: GalleryItem) => item.uri}
-          renderItem={GalleryImage} // Pass component directly without cast
+          renderItem={GalleryImage}
           initialIndex={initialIndex}
-          onIndexChange={onIndexChange}
-          onSwipeToClose={() => router.back()}
+          onIndexChange={setCurrentIndex}
+          onSwipeToClose={handleClose}
           loop
         />
-        <TouchableOpacity
-          style={[styles.fixedButton, styles.closeButton]}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.closeButtonText}>×</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.fixedButton, styles.downloadButton]}
-          onPress={handleDownload}
-        >
-          <FontAwesome name="download" size={20} color="white" />
-        </TouchableOpacity>
-        <View style={[styles.indexIndicator, { top: top + 15 }]}>
-          <Text style={styles.indexText}>
-            {`${currentIndex + 1} / ${galleryData.length}`}
-          </Text>
-        </View>
+
+        <Animated.View style={[styles.chromeLayer, chromeStyle]} pointerEvents="box-none">
+          <Pressable
+            style={[controlStyle, styles.closeButton]}
+            onPress={handleClose}
+            accessibilityRole="button"
+            accessibilityLabel="關閉"
+          >
+            <Ionicons name="close" size={22} color="#FFFFFF" />
+          </Pressable>
+
+          <Pressable
+            style={[controlStyle, styles.downloadButton]}
+            onPress={handleDownload}
+            accessibilityRole="button"
+            accessibilityLabel="下載圖片"
+          >
+            <FontAwesome name="download" size={18} color="#FFFFFF" />
+          </Pressable>
+
+          <View style={[styles.indexIndicator, { top: topInset }]}>
+            <Text style={styles.indexText}>
+              {`${currentIndex + 1} / ${galleryData.length}`}
+            </Text>
+          </View>
+
+          {params.title ? (
+            <View style={[styles.titleBar, { bottom: insets.bottom + spacing.lg }]}>
+              <Text style={styles.titleText} numberOfLines={1}>
+                {params.title}
+              </Text>
+            </View>
+          ) : null}
+        </Animated.View>
       </SignedIn>
 
       <SignedOut>
-        <View style={styles.signInContainer}>
-          <Text style={styles.signInText}>Please sign in to view gallery</Text>
-          <Link href={`/(auth)/sign-in?redirect_url=${encodeURIComponent('/gallery')}`} asChild>
-            <TouchableOpacity style={styles.signInButton}>
-              <Text style={styles.signInButtonText}>Sign In</Text>
-            </TouchableOpacity>
-          </Link>
+        <View style={[styles.signInContainer, { backgroundColor: colors.background }]}>
+          <Text style={[styles.signInText, { color: colors.text }]}>請登入以查看相簿</Text>
+          <Button
+            label="登入"
+            onPress={() =>
+              router.push(`/(auth)/sign-in?redirect_url=${encodeURIComponent('/gallery')}`)
+            }
+          />
         </View>
       </SignedOut>
     </View>
   );
 }
 
-// Make sure the export statement is clear and separate
 export default GalleryModalScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // Black background for lightbox effect
+    backgroundColor: 'transparent',
   },
-  fixedButton: {
-    position: 'absolute',
-    top: SAFE_AREA_TOP + 10,
-    padding: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: '#000000',
+  },
+  chromeLayer: {
+    ...StyleSheet.absoluteFill,
     zIndex: 10,
   },
-  closeButton: {
-    left: 15,
+  controlButton: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  closeButtonText: {
-    color: '#fff',
-    fontSize: 24,
-    lineHeight: 24, // Adjust line height for better centering
+  closeButton: {
+    left: spacing.lg,
   },
   downloadButton: {
-    right: 15,
-    padding: 12, // Adjust padding for icon size
+    right: spacing.lg,
   },
   indexIndicator: {
     position: 'absolute',
     alignSelf: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 15,
-    zIndex: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderRadius: radius.full,
   },
   indexText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...typography.caption,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  titleBar: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    borderRadius: radius.lg,
+  },
+  titleText: {
+    ...typography.bodyMedium,
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   signInContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.xl,
+    gap: spacing.lg,
   },
   signInText: {
-    fontSize: 16,
-    marginBottom: 20,
+    ...typography.body,
     textAlign: 'center',
-  },
-  signInButton: {
-    backgroundColor: '#3c73e9',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  signInButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
   },
   imageContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000', // Ensure background is black
+    backgroundColor: '#000000',
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent overlay
   },
   errorContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    gap: spacing.sm,
   },
   errorText: {
-    color: '#aaa',
-    marginTop: 10,
-    fontSize: 16,
+    ...typography.body,
+    color: '#95D5B2',
   },
-}); 
+});

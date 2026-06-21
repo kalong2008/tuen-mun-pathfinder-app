@@ -1,5 +1,8 @@
 export default {
   "expo": {
+    "name": "屯門前鋒會",
+    "slug": "tuen-mun-pathfinder-app",
+    "scheme": "tuenmunpathfinder",
     "extra": {
       "eas": {
         "projectId": "0d489ade-3539-4f30-94a5-cc44d75bac93"
@@ -18,6 +21,8 @@ export default {
     "newArchEnabled": true,
     "userInterfaceStyle": "light",
     "plugins": [
+      "expo-router",
+      "expo-notifications",
       [
         "expo-media-library",
         {
