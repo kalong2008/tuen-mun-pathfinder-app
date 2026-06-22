@@ -4,10 +4,12 @@ import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { ScalePressable } from '@/components/ui/ScalePressable';
 import { radius, spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import type { ActivitiesByDate } from '@/lib/calendar-utils';
 import {
   expandNoticeTargets,
-  formatNoticeDate,
-  isNewNotice,
+  getClubShortLabel,
+  getNoticeActivityName,
+  getNoticeDisplayDate,
   isPastNotice,
   type NoticeItem,
 } from '@/lib/notice-utils';
@@ -16,6 +18,7 @@ import { getSingleTargetColor, getTargetColor } from '@/lib/target-colors';
 type NoticeListItemProps = {
   notice: NoticeItem;
   onPress: () => void;
+  activities?: ActivitiesByDate;
   /** Home preview uses a tighter layout without activity type. */
   variant?: 'full' | 'preview';
   style?: ViewStyle;
@@ -36,7 +39,7 @@ function NoticeTargetTags({ targets, past }: { targets: string[]; past: boolean 
               { backgroundColor: `${color}22`, borderColor: `${color}55` },
             ]}
           >
-            <Text style={[styles.tagText, { color }]}>{target}</Text>
+            <Text style={[styles.tagText, { color }]}>{getClubShortLabel(target)}</Text>
           </View>
         );
       })}
@@ -47,18 +50,17 @@ function NoticeTargetTags({ targets, past }: { targets: string[]; past: boolean 
 export const NoticeListItem = React.memo(function NoticeListItem({
   notice,
   onPress,
+  activities,
   variant = 'full',
   style,
 }: NoticeListItemProps) {
   const { colors } = useAppTheme();
   const past = isPastNotice(notice.date);
   const accentColor = getTargetColor(notice.target, past);
-  const showNewBadge = isNewNotice(notice.date) && !past;
-
-  const metaText =
-    variant === 'full'
-      ? `${formatNoticeDate(notice.date)} · ${notice.activityType}`
-      : formatNoticeDate(notice.date);
+  const activityName = getNoticeActivityName(notice);
+  const displayDate = getNoticeDisplayDate(notice, activities, {
+    includeYear: variant === 'full',
+  });
 
   return (
     <ScalePressable
@@ -79,17 +81,12 @@ export const NoticeListItem = React.memo(function NoticeListItem({
           style={[styles.title, { color: colors.text }]}
           numberOfLines={variant === 'preview' ? 2 : 1}
         >
-          {notice.title}
+          {activityName}
         </Text>
-        {showNewBadge ? (
-          <View style={[styles.newBadge, { backgroundColor: colors.danger }]}>
-            <Text style={styles.newBadgeText}>新</Text>
-          </View>
-        ) : null}
       </View>
       <View style={styles.metaRow}>
         <Text style={[styles.meta, { color: colors.muted }]} numberOfLines={1}>
-          {metaText}
+          {displayDate}
         </Text>
         <NoticeTargetTags targets={notice.target} past={past} />
       </View>
@@ -138,15 +135,5 @@ const styles = StyleSheet.create({
   },
   tagText: {
     ...typography.small,
-  },
-  newBadge: {
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 1,
-  },
-  newBadgeText: {
-    color: '#FFFFFF',
-    ...typography.small,
-    fontWeight: '600',
   },
 });

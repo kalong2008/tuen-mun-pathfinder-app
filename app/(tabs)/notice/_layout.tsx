@@ -7,7 +7,7 @@ export default function NoticeStackLayout() {
 
   return (
     <Stack screenOptions={screenOptions}>
-      <Stack.Screen name="index" options={{ title: '通告' }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
     </Stack>
   );
 }

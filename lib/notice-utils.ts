@@ -138,6 +138,45 @@ export function getNoticePreview(notices: NoticeItem[], limit = 2): NoticeItem[]
     .slice(0, limit);
 }
 
+export type NoticeClubFilter = 'all' | 'pathfinder' | 'adventurer';
+export type NoticeTimelineFilter = 'active' | 'past';
+
+export type NoticeFilters = {
+  club: NoticeClubFilter;
+  timeline: NoticeTimelineFilter;
+};
+
+export function noticeMatchesClubFilter(notice: NoticeItem, club: NoticeClubFilter): boolean {
+  if (club === 'all') return true;
+
+  const expanded = expandNoticeTargets(notice.target);
+
+  switch (club) {
+    case 'pathfinder':
+      return expanded.includes('前鋒會');
+    case 'adventurer':
+      return expanded.includes('幼鋒會');
+    default: {
+      const unreachable: never = club;
+      return unreachable;
+    }
+  }
+}
+
+export function filterNotices(notices: NoticeItem[], filters: NoticeFilters): NoticeItem[] {
+  return notices
+    .filter((notice) => noticeMatchesClubFilter(notice, filters.club))
+    .filter((notice) =>
+      filters.timeline === 'active' ? !isPastNotice(notice.date) : isPastNotice(notice.date),
+    )
+    .sort((a, b) => {
+      if (filters.timeline === 'active') {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      }
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+}
+
 export type NoticeSection = {
   title: string;
   data: NoticeItem[];

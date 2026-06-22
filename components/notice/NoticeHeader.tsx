@@ -4,60 +4,51 @@ import {
   StyleSheet,
   Text,
   View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GalleryHeaderOptionsButton } from "@/components/gallery/GalleryHeaderOptionsButton";
-import { LiquidGlassBackdrop } from "@/components/ui/LiquidGlassSurface";
-import { spacing, typography } from "@/constants/theme";
-import { useAppTheme } from "@/hooks/useAppTheme";
-import type { GallerySortOption, GalleryViewMode } from "@/lib/gallery-utils";
+import { NoticeHeaderOptionsButton } from '@/components/notice/NoticeHeaderOptionsButton';
+import { LiquidGlassBackdrop } from '@/components/ui/LiquidGlassSurface';
+import { spacing, typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import type { NoticeClubFilter, NoticeTimelineFilter } from '@/lib/notice-utils';
 
 const TITLE_BLOCK_HEIGHT = 41 + spacing.xs + 20;
 
-export function getGalleryPhotosHeaderHeight(topInset: number) {
+export function getNoticeHeaderHeight(topInset: number) {
   return Math.max(topInset, spacing.sm) + TITLE_BLOCK_HEIGHT + spacing.md;
 }
 
-type GalleryPhotosHeaderProps = {
+type NoticeHeaderProps = {
   subtitle: string;
   sticky?: boolean;
   onLayout?: (height: number) => void;
   showOptions?: boolean;
-  sort?: GallerySortOption;
-  onSortChange?: (sort: GallerySortOption) => void;
-  selectedYear?: number | null;
-  onYearChange?: (year: number | null) => void;
-  availableYears?: number[];
-  viewMode?: GalleryViewMode;
-  onViewModeChange?: (mode: GalleryViewMode) => void;
+  club?: NoticeClubFilter;
+  onClubChange?: (club: NoticeClubFilter) => void;
+  timeline?: NoticeTimelineFilter;
+  onTimelineChange?: (timeline: NoticeTimelineFilter) => void;
 };
 
-export function GalleryPhotosHeader({
+export function NoticeHeader({
   subtitle,
   sticky = false,
   onLayout,
   showOptions = false,
-  sort,
-  onSortChange,
-  selectedYear,
-  onYearChange,
-  availableYears,
-  viewMode,
-  onViewModeChange,
-}: GalleryPhotosHeaderProps) {
+  club,
+  onClubChange,
+  timeline,
+  onTimelineChange,
+}: NoticeHeaderProps) {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const paddingTop = Math.max(insets.top, spacing.sm);
   const canShowOptions =
     showOptions &&
-    sort !== undefined &&
-    onSortChange !== undefined &&
-    selectedYear !== undefined &&
-    onYearChange !== undefined &&
-    availableYears !== undefined &&
-    viewMode !== undefined &&
-    onViewModeChange !== undefined;
+    club !== undefined &&
+    onClubChange !== undefined &&
+    timeline !== undefined &&
+    onTimelineChange !== undefined;
 
   const handleLayout = (event: LayoutChangeEvent) => {
     onLayout?.(event.nativeEvent.layout.height);
@@ -66,7 +57,7 @@ export function GalleryPhotosHeader({
   const content = (
     <View style={styles.row}>
       <View style={styles.titleBlock}>
-        <Text style={[styles.title, { color: colors.text }]}>相簿</Text>
+        <Text style={[styles.title, { color: colors.text }]}>通告</Text>
         <Text
           style={[styles.subtitle, { color: colors.muted }]}
           numberOfLines={1}
@@ -76,15 +67,11 @@ export function GalleryPhotosHeader({
       </View>
 
       {canShowOptions ? (
-        <GalleryHeaderOptionsButton
-          variant="photos"
-          sort={sort}
-          onSortChange={onSortChange}
-          selectedYear={selectedYear}
-          onYearChange={onYearChange}
-          availableYears={availableYears}
-          viewMode={viewMode}
-          onViewModeChange={onViewModeChange}
+        <NoticeHeaderOptionsButton
+          club={club}
+          onClubChange={onClubChange}
+          timeline={timeline}
+          onTimelineChange={onTimelineChange}
         />
       ) : (
         <View style={styles.optionsPlaceholder} />
@@ -123,21 +110,21 @@ export function GalleryPhotosHeader({
 
 const styles = StyleSheet.create({
   stickyWrapper: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 10,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   container: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
   },
   row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: spacing.md,
   },
   titleBlock: {
@@ -147,9 +134,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 34,
-    fontWeight: "700",
+    fontWeight: '700',
     lineHeight: 41,
-    letterSpacing: Platform.OS === "ios" ? 0.37 : 0,
+    letterSpacing: Platform.OS === 'ios' ? 0.37 : 0,
   },
   subtitle: {
     ...typography.body,
