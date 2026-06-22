@@ -1,39 +1,35 @@
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
 
-import { HomePreviewTile } from '@/components/home/HomePreviewTile';
-import { AppLogo } from '@/components/AppLogo';
-import { HomeHeaderLogin, HomeHeaderMenuButton } from '@/components/HomeHeader';
-import { HeroBanner } from '@/components/ui/HeroBanner';
-import { Screen } from '@/components/ui/Screen';
-import { spacing, TARGET_COLORS } from '@/constants/theme';
-import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import { API } from '@/lib/api';
+import { AppLogo } from "@/components/AppLogo";
+import { HomePreviewTile } from "@/components/home/HomePreviewTile";
+import { HomeHeaderLogin, HomeHeaderMenuButton } from "@/components/HomeHeader";
+import { HeroBanner } from "@/components/ui/HeroBanner";
+import { Screen } from "@/components/ui/Screen";
+import { spacing, TARGET_COLORS } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { useNativeTabScrollProps } from "@/hooks/useNativeTabScrollProps";
+import { API } from "@/lib/api";
 import {
-  getActivityClubBadges,
-  getActivityDisplayName,
-  getNextUpcomingActivity,
-  parseActivityClub,
-  type ActivitiesByDate,
-  type ActivityClub,
-} from '@/lib/calendar-utils';
+    getActivityClubBadges,
+    getActivityDisplayName,
+    getNextUpcomingActivity,
+    parseActivityClub,
+    type ActivitiesByDate,
+    type ActivityClub,
+} from "@/lib/calendar-utils";
 import {
-  expandNoticeTargets,
-  getClubShortLabel,
-  getNoticeActivityName,
-  getNoticeDisplayDate,
-  getNoticePreview,
-  isPastNotice,
-  type NoticeItem,
-} from '@/lib/notice-utils';
-import { getSingleTargetColor } from '@/lib/target-colors';
-import { HERO_BANNER_PHOTO } from '@/lib/photo-url';
+    expandNoticeTargets,
+    getClubShortLabel,
+    getNoticeActivityName,
+    getNoticeDisplayDate,
+    getNoticePreview,
+    isPastNotice,
+    type NoticeItem,
+} from "@/lib/notice-utils";
+import { HERO_BANNER_PHOTO } from "@/lib/photo-url";
+import { getSingleTargetColor } from "@/lib/target-colors";
 
 type DailyVerse = {
   citation: string;
@@ -47,11 +43,11 @@ type NextEventPreview = {
   club: ActivityClub | null;
 };
 
-function getClubColor(club: 'PATHFINDER' | 'ADVENTURER'): string {
+function getClubColor(club: "PATHFINDER" | "ADVENTURER"): string {
   switch (club) {
-    case 'PATHFINDER':
+    case "PATHFINDER":
       return TARGET_COLORS.PATHFINDER;
-    case 'ADVENTURER':
+    case "ADVENTURER":
       return TARGET_COLORS.ADVENTURER;
     default: {
       const unreachable: never = club;
@@ -70,7 +66,8 @@ export default function HomeScreen() {
   const [verseError, setVerseError] = useState<string | null>(null);
   const [nextEvent, setNextEvent] = useState<NextEventPreview | null>(null);
   const [noticePreview, setNoticePreview] = useState<NoticeItem[]>([]);
-  const [calendarActivities, setCalendarActivities] = useState<ActivitiesByDate>({});
+  const [calendarActivities, setCalendarActivities] =
+    useState<ActivitiesByDate>({});
 
   useEffect(() => {
     async function loadHomeData() {
@@ -87,7 +84,7 @@ export default function HomeScreen() {
           setDailyVerse(verseData);
           setVerseError(null);
         } else {
-          throw new Error('verse fetch failed');
+          throw new Error("verse fetch failed");
         }
 
         if (calendarRes.ok) {
@@ -108,12 +105,12 @@ export default function HomeScreen() {
           setNoticePreview(getNoticePreview(notices, 1));
         }
       } catch (err) {
-        console.error('Home data error:', err);
-        setVerseError('無法載入今日經文');
+        console.error("Home data error:", err);
+        setVerseError("無法載入今日經文");
         setDailyVerse({
-          citation: '腓立比書 4:13',
-          passage: '我靠著那加給我力量的，凡事都能做。',
-          version: '和合本',
+          citation: "腓立比書 4:13",
+          passage: "我靠著那加給我力量的，凡事都能做。",
+          version: "和合本",
         });
       } finally {
         setVerseLoading(false);
@@ -124,10 +121,12 @@ export default function HomeScreen() {
   }, []);
 
   const latestNotice = noticePreview[0];
-  const latestNoticePast = latestNotice ? isPastNotice(latestNotice.date) : false;
+  const latestNoticePast = latestNotice
+    ? isPastNotice(latestNotice.date)
+    : false;
 
   return (
-    <Screen scroll={false} padded={false} edges={['top']}>
+    <Screen scroll={false} padded={false} edges={["top"]}>
       <View collapsable={false} style={styles.screenRoot}>
         <ScrollView
           {...tabScrollProps}
@@ -135,84 +134,99 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-        <View style={styles.heroWrap}>
-          <HeroBanner
-            fullBleed
-            imageUri={HERO_BANNER_PHOTO}
-            title="屯門前鋒會 幼鋒會"
-            subtitle="Tuen Mun Pathfinder and Adventurer Club"
-          />
-        </View>
+          <View style={styles.heroWrap}>
+            <HeroBanner
+              fullBleed
+              imageUri={HERO_BANNER_PHOTO}
+              title="屯門前鋒會 幼鋒會"
+              subtitle="Tuen Mun Pathfinder and Adventurer Club"
+            />
+          </View>
 
-        <View style={styles.infoStack}>
-          <HomePreviewTile
-            label="今日經文"
-            icon="bookmark.fill"
-            tone="primary"
-            name={verseLoading ? undefined : dailyVerse?.passage}
-            date={verseLoading ? undefined : dailyVerse?.citation}
-            loading={verseLoading}
-            error={verseError}
-          />
+          <View style={styles.infoStack}>
+            <HomePreviewTile
+              label="今日經文"
+              icon="bookmark.fill"
+              tone="primary"
+              name={verseLoading ? undefined : dailyVerse?.passage}
+              date={verseLoading ? undefined : dailyVerse?.citation}
+              loading={verseLoading}
+              error={verseError}
+            />
 
-          <View style={styles.previewRow}>
-            <View style={styles.previewColumn}>
-              <HomePreviewTile
-                label="下一活動"
-                icon="calendar.circle.fill"
-                tone="secondary"
-              name={nextEvent?.name}
-              date={nextEvent?.date}
-              tags={
-                nextEvent?.club
-                  ? getActivityClubBadges(nextEvent.club).map((badge) => ({
-                      label: getClubShortLabel(badge.label),
-                      color: getClubColor(badge.club),
-                    }))
-                  : []
-              }
-                emptyText="暫無即將舉行的活動"
-                onPress={() => router.push('/(tabs)/calendar')}
-              />
-            </View>
+            <View style={styles.previewRow}>
+              <View style={styles.previewColumn}>
+                <HomePreviewTile
+                  label="下一活動"
+                  icon="calendar.circle.fill"
+                  tone="secondary"
+                  name={nextEvent?.name}
+                  date={nextEvent?.date}
+                  tags={
+                    nextEvent?.club
+                      ? getActivityClubBadges(nextEvent.club).map((badge) => ({
+                          label: getClubShortLabel(badge.label),
+                          color: getClubColor(badge.club),
+                        }))
+                      : []
+                  }
+                  emptyText="暫無即將舉行的活動"
+                  onPress={() => router.push("/(tabs)/calendar")}
+                />
+              </View>
 
-            <View style={styles.previewColumn}>
-              <HomePreviewTile
-                label="最新通告"
-                icon="bell.fill"
-                tone="accent"
-              name={latestNotice ? getNoticeActivityName(latestNotice) : undefined}
-              date={
-                latestNotice
-                  ? getNoticeDisplayDate(latestNotice, calendarActivities, { includeYear: false })
-                  : undefined
-              }
-              tags={
-                latestNotice
-                  ? expandNoticeTargets(latestNotice.target).map((target) => ({
-                      label: getClubShortLabel(target),
-                      color: getSingleTargetColor(target, latestNoticePast),
-                    }))
-                  : []
-              }
-                emptyText="暫無最新通告"
-                onPress={() =>
-                  latestNotice
-                    ? router.push({
-                        pathname: '/noticeDetailModal',
-                        params: { id: latestNotice.id },
-                      })
-                    : router.push('/(tabs)/notice')
-                }
-              />
+              <View style={styles.previewColumn}>
+                <HomePreviewTile
+                  label="最新通告"
+                  icon="bell.fill"
+                  tone="accent"
+                  name={
+                    latestNotice
+                      ? getNoticeActivityName(latestNotice)
+                      : undefined
+                  }
+                  date={
+                    latestNotice
+                      ? getNoticeDisplayDate(latestNotice, calendarActivities, {
+                          includeYear: false,
+                        })
+                      : undefined
+                  }
+                  tags={
+                    latestNotice
+                      ? expandNoticeTargets(latestNotice.target).map(
+                          (target) => ({
+                            label: getClubShortLabel(target),
+                            color: getSingleTargetColor(
+                              target,
+                              latestNoticePast,
+                            ),
+                          }),
+                        )
+                      : []
+                  }
+                  emptyText="暫無最新通告"
+                  onPress={() =>
+                    latestNotice
+                      ? router.push({
+                          pathname: "/noticeDetailModal",
+                          params: { id: latestNotice.id },
+                        })
+                      : router.push("/(tabs)/notice")
+                  }
+                />
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
 
         <View
           pointerEvents="box-none"
-          style={[styles.headerOverlay, styles.headerBar, { backgroundColor: colors.background }]}
+          style={[
+            styles.headerOverlay,
+            styles.headerBar,
+            { backgroundColor: colors.background },
+          ]}
         >
           <AppLogo />
           <View style={styles.headerActions}>
@@ -233,23 +247,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 1,
   },
   headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     minHeight: 44,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
   },
   headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
   },
   scrollContent: {
@@ -266,8 +280,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   previewRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+    flexDirection: "row",
+    alignItems: "stretch",
     gap: spacing.md,
   },
   previewColumn: {

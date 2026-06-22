@@ -16,12 +16,14 @@ import { LoadingView } from '@/components/ui/LoadingView';
 import { radius, spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { API, apiUrl } from '@/lib/api';
+import { type ActivitiesByDate } from '@/lib/calendar-utils';
 import {
   expandNoticeTargets,
-  formatNoticeDate,
+  getNoticeDisplayDate,
+  getNoticePdfDocuments,
   type NoticeItem,
 } from '@/lib/notice-utils';
-import { getTargetColor } from '@/lib/target-colors';
+import { getSingleTargetColor, getTargetColor } from '@/lib/target-colors';
 
 type DetailRowProps = {
   label: string;
@@ -47,13 +49,23 @@ function DetailRow({ label, value, isLast = false }: DetailRowProps) {
 
 type DocumentRowProps = {
   fileName: string;
+  clubLabel?: string | null;
+  accentColor: string;
   loading: boolean;
   isLast?: boolean;
   onPress: () => void;
 };
 
-function DocumentRow({ fileName, loading, isLast = false, onPress }: DocumentRowProps) {
+function DocumentRow({
+  fileName,
+  clubLabel,
+  accentColor,
+  loading,
+  isLast = false,
+  onPress,
+}: DocumentRowProps) {
   const { colors } = useAppTheme();
+  const subtitle = clubLabel ? `${clubLabel} · 通告下載` : '通告下載';
 
   return (
     <>
@@ -65,15 +77,17 @@ function DocumentRow({ fileName, loading, isLast = false, onPress }: DocumentRow
           pressed && !loading ? { backgroundColor: colors.surfaceMuted } : null,
         ]}
       >
-        <IconSymbol name="doc.text" size={20} color={colors.primary} />
+        <IconSymbol name="doc.text" size={20} color={accentColor} />
         <View style={styles.documentCopy}>
           <Text style={[styles.documentTitle, { color: colors.text }]} numberOfLines={1}>
             {fileName}
           </Text>
-          <Text style={[styles.documentSubtitle, { color: colors.muted }]}>通告下載</Text>
+          <Text style={[styles.documentSubtitle, { color: clubLabel ? accentColor : colors.muted }]}>
+            {subtitle}
+          </Text>
         </View>
         {loading ? (
-          <ActivityIndicator size="small" color={colors.primary} />
+          <ActivityIndicator size="small" color={accentColor} />
         ) : (
           <IconSymbol name="chevron.right" size={16} color={colors.muted} />
         )}
@@ -88,6 +102,7 @@ export default function NoticeDetailModal() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useAppTheme();
   const [notice, setNotice] = useState<NoticeItem | null>(null);
+  const [calendarActivities, setCalendarActivities] = useState<ActivitiesByDate>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
@@ -106,15 +121,23 @@ export default function NoticeDetailModal() {
       setLoadError(null);
 
       try {
-        const response = await fetch(API.notices());
-        if (!response.ok) {
-          throw new Error(`Network response was not ok: ${response.status}`);
+        const [noticesRes, calendarRes] = await Promise.all([
+          fetch(API.notices()),
+          fetch(API.calendar()),
+        ]);
+
+        if (!noticesRes.ok) {
+          throw new Error(`Network response was not ok: ${noticesRes.status}`);
         }
 
-        const notices = (await response.json()) as NoticeItem[];
+        const notices = (await noticesRes.json()) as NoticeItem[];
         const matchedNotice = notices.find((item) => item.id === id) ?? null;
 
         if (cancelled) return;
+
+        if (calendarRes.ok) {
+          setCalendarActivities((await calendarRes.json()) as ActivitiesByDate);
+        }
 
         if (!matchedNotice) {
           setLoadError('找不到通告');
@@ -143,7 +166,7 @@ export default function NoticeDetailModal() {
   }, [id]);
 
   const handleOpenPdf = useCallback(
-    async (pdfPath: string) => {
+    async (pdfPath: string, club?: string | null) => {
       if (!notice) return;
 
       try {
@@ -155,9 +178,12 @@ export default function NoticeDetailModal() {
         const noticeDate = new Date(notice.date);
         noticeDate.setHours(0, 0, 0, 0);
         const isPastActivity = noticeDate < today;
+        const toolbarColor = club
+          ? getSingleTargetColor(club, isPastActivity)
+          : getTargetColor(notice.target, isPastActivity);
 
         await WebBrowser.openBrowserAsync(fullUrl, {
-          toolbarColor: getTargetColor(notice.target, isPastActivity),
+          toolbarColor,
           controlsColor: 'white',
           presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
           enableBarCollapsing: true,
@@ -182,6 +208,10 @@ export default function NoticeDetailModal() {
   const screenTitle = notice
     ? `${notice.title}${isPastActivity ? ' (過去活動)' : ''}`
     : '通告';
+  const displayDate = notice
+    ? getNoticeDisplayDate(notice, calendarActivities)
+    : '';
+  const pdfDocuments = notice ? getNoticePdfDocuments(notice) : [];
 
   return (
     <>
@@ -221,7 +251,7 @@ export default function NoticeDetailModal() {
         >
           <Text style={[styles.sectionTitle, { color: colors.muted }]}>詳情</Text>
           <Card style={styles.groupCard}>
-            <DetailRow label="日期" value={formatNoticeDate(notice.date)} />
+            <DetailRow label="日期" value={displayDate} />
             <DetailRow label="活動類型" value={notice.activityType} />
             <DetailRow
               label="參與對象"
@@ -230,20 +260,26 @@ export default function NoticeDetailModal() {
             />
           </Card>
 
-          {notice.pdfUrl.length > 0 ? (
+          {pdfDocuments.length > 0 ? (
             <>
               <Text style={[styles.sectionTitle, { color: colors.muted }]}>相關文件</Text>
               <Card style={styles.groupCard}>
-                {notice.pdfUrl.map((pdf, index) => {
-                  const fileName = pdf.split('/').pop() || `文件 ${index + 1}`;
+                {pdfDocuments.map((document, index) => {
+                  const fileName =
+                    document.pdfUrl.split('/').pop() || `文件 ${index + 1}`;
+                  const accentColor = document.club
+                    ? getSingleTargetColor(document.club, isPastActivity)
+                    : getTargetColor(notice.target, isPastActivity);
 
                   return (
                     <DocumentRow
-                      key={pdf}
+                      key={`${document.pdfUrl}-${index}`}
                       fileName={fileName}
-                      loading={loadingPdf === pdf}
-                      isLast={index === notice.pdfUrl.length - 1}
-                      onPress={() => handleOpenPdf(pdf)}
+                      clubLabel={document.club}
+                      accentColor={accentColor}
+                      loading={loadingPdf === document.pdfUrl}
+                      isLast={index === pdfDocuments.length - 1}
+                      onPress={() => handleOpenPdf(document.pdfUrl, document.club)}
                     />
                   );
                 })}

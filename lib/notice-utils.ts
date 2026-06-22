@@ -2,7 +2,9 @@ import {
   findCampDateRangeForDate,
   formatActivityDate,
   formatActivityDateRange,
+  getActivityDisplayName,
   type ActivitiesByDate,
+  type CombinedActivity,
 } from '@/lib/calendar-utils';
 
 export type NoticeItem = {
@@ -48,6 +50,68 @@ export function getClubShortLabel(label: string): string {
 export function hasBothNoticeTargets(targets: string[]): boolean {
   const expanded = expandNoticeTargets(targets);
   return expanded.includes('前鋒會') && expanded.includes('幼鋒會');
+}
+
+export type NoticePdfClub = '前鋒會' | '幼鋒會';
+
+export type NoticePdfDocument = {
+  pdfUrl: string;
+  club: NoticePdfClub | null;
+};
+
+function inferNoticePdfClub(pdfUrl: string): NoticePdfClub | null {
+  const normalized = decodeURIComponent(pdfUrl).toLowerCase();
+
+  const mentionsPathfinder =
+    normalized.includes('pathfinder') || normalized.includes('前鋒');
+  const mentionsAdventurer =
+    normalized.includes('adventurer') || normalized.includes('幼鋒');
+
+  if (mentionsPathfinder && !mentionsAdventurer) {
+    return '前鋒會';
+  }
+  if (mentionsAdventurer && !mentionsPathfinder) {
+    return '幼鋒會';
+  }
+
+  return null;
+}
+
+export function getNoticePdfDocuments(notice: NoticeItem): NoticePdfDocument[] {
+  const showClubLabels =
+    notice.pdfUrl.length > 1 && hasBothNoticeTargets(notice.target);
+
+  if (!showClubLabels) {
+    return notice.pdfUrl.map((pdfUrl) => ({ pdfUrl, club: null }));
+  }
+
+  const documents = notice.pdfUrl.map((pdfUrl) => ({
+    pdfUrl,
+    club: inferNoticePdfClub(pdfUrl),
+  }));
+
+  if (documents.length !== 2) {
+    return documents;
+  }
+
+  const [first, second] = documents;
+
+  if (first.club && !second.club) {
+    second.club = first.club === '前鋒會' ? '幼鋒會' : '前鋒會';
+    return documents;
+  }
+
+  if (second.club && !first.club) {
+    first.club = second.club === '前鋒會' ? '幼鋒會' : '前鋒會';
+    return documents;
+  }
+
+  if (!first.club && !second.club) {
+    first.club = '前鋒會';
+    second.club = '幼鋒會';
+  }
+
+  return documents;
 }
 
 export function formatNoticeDate(dateString: string): string {
@@ -202,6 +266,32 @@ export function groupNoticesForTimeline(notices: NoticeItem[]): NoticeSection[] 
 
   const sections: NoticeSection[] = [];
   if (upcoming.length > 0) sections.push({ title: '即將舉行', data: upcoming });
-  if (past.length > 0) sections.push({ title: '較早通告', data: past });
+  if (past.length > 0) sections.push({ title: '已結束', data: past });
   return sections;
+}
+
+function noticeMatchesActivityName(notice: NoticeItem, activityName: string): boolean {
+  const noticeName = getNoticeActivityName(notice);
+  return noticeName === activityName || notice.activityType === activityName;
+}
+
+function noticeDateMatchesActivity(notice: NoticeItem, item: CombinedActivity): boolean {
+  return notice.date >= item.startDate && notice.date <= item.endDate;
+}
+
+export function findNoticeForActivity(
+  notices: NoticeItem[],
+  item: CombinedActivity,
+): NoticeItem | null {
+  const activityName = getActivityDisplayName(item.activity.title);
+  const matches = notices.filter(
+    (notice) =>
+      noticeMatchesActivityName(notice, activityName) &&
+      noticeDateMatchesActivity(notice, item),
+  );
+
+  if (matches.length === 0) return null;
+
+  matches.sort((left, right) => right.date.localeCompare(left.date));
+  return matches[0];
 }

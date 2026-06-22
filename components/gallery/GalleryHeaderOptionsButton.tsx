@@ -1,17 +1,18 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import * as DropdownMenu from 'zeego/dropdown-menu';
 
+import { renderMenuCheckboxItem } from '@/components/menu/renderMenuCheckboxItem';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { LiquidGlassSurface } from '@/components/ui/LiquidGlassSurface';
 import { radius } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import type { GallerySortOption, GalleryViewMode } from '@/lib/gallery-utils';
-
-const SORT_OPTIONS: { value: GallerySortOption; label: string }[] = [
-  { value: 'newest', label: '按最新加入' },
-  { value: 'oldest', label: '按最舊加入' },
-  { value: 'name', label: '按名稱' },
-];
+import {
+  FILTER_MENU_LABEL,
+  GALLERY_SORT_MENU_OPTIONS,
+  GALLERY_VIEW_MENU_OPTIONS,
+  MENU_ICONS,
+} from '@/lib/header-menu-options';
 
 const ALL_YEARS_VALUE = 'all';
 
@@ -41,10 +42,11 @@ export function GalleryHeaderOptionsButton({
   const iconColor = colors.text;
 
   const yearOptions = [
-    { value: ALL_YEARS_VALUE, label: '全部' },
+    { value: ALL_YEARS_VALUE, label: '全部', icon: MENU_ICONS.yearAll },
     ...availableYears.map((year) => ({
       value: String(year),
       label: `${year}年`,
+      icon: MENU_ICONS.year,
     })),
   ];
 
@@ -73,22 +75,35 @@ export function GalleryHeaderOptionsButton({
 
       <DropdownMenu.Content>
         <DropdownMenu.Group>
-          {SORT_OPTIONS.map((option) => (
-            <DropdownMenu.CheckboxItem
-              key={`sort-${option.value}`}
-              value={sort === option.value}
-              onValueChange={() => onSortChange(option.value)}
-            >
-              <DropdownMenu.ItemIndicator />
-              <DropdownMenu.ItemTitle>{option.label}</DropdownMenu.ItemTitle>
-            </DropdownMenu.CheckboxItem>
-          ))}
+          {GALLERY_SORT_MENU_OPTIONS.map((option) =>
+            renderMenuCheckboxItem({
+              itemKey: `sort-${option.value}`,
+              option,
+              selected: sort === option.value,
+              onSelect: onSortChange,
+            }),
+          )}
+        </DropdownMenu.Group>
+
+        <DropdownMenu.Group>
+          {GALLERY_VIEW_MENU_OPTIONS.map((option) =>
+            renderMenuCheckboxItem({
+              itemKey: `view-${option.value}`,
+              option,
+              selected: viewMode === option.value,
+              onSelect: onViewModeChange,
+            }),
+          )}
         </DropdownMenu.Group>
 
         <DropdownMenu.Group>
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger key="filter">
-              <DropdownMenu.ItemTitle>過濾</DropdownMenu.ItemTitle>
+              <DropdownMenu.ItemIcon
+                ios={{ name: MENU_ICONS.filter.ios }}
+                androidIconName={MENU_ICONS.filter.android}
+              />
+              <DropdownMenu.ItemTitle>{FILTER_MENU_LABEL}</DropdownMenu.ItemTitle>
             </DropdownMenu.SubTrigger>
 
             <DropdownMenu.SubContent>
@@ -98,52 +113,14 @@ export function GalleryHeaderOptionsButton({
                     ? selectedYear === null
                     : selectedYear === Number(option.value);
 
-                return (
-                  <DropdownMenu.CheckboxItem
-                    key={`year-${option.value}`}
-                    value={isSelected}
-                    onValueChange={() =>
-                      onYearChange(option.value === ALL_YEARS_VALUE ? null : Number(option.value))
-                    }
-                  >
-                    <DropdownMenu.ItemIndicator />
-                    <DropdownMenu.ItemTitle>{option.label}</DropdownMenu.ItemTitle>
-                  </DropdownMenu.CheckboxItem>
-                );
+                return renderMenuCheckboxItem({
+                  itemKey: `year-${option.value}`,
+                  option,
+                  selected: isSelected,
+                  onSelect: (value) =>
+                    onYearChange(value === ALL_YEARS_VALUE ? null : Number(value)),
+                });
               })}
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-        </DropdownMenu.Group>
-
-        <DropdownMenu.Group>
-          <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger key="view-options">
-              <DropdownMenu.ItemTitle>顯示方式選項</DropdownMenu.ItemTitle>
-            </DropdownMenu.SubTrigger>
-
-            <DropdownMenu.SubContent>
-              <DropdownMenu.CheckboxItem
-                key="view-card"
-                value={viewMode === 'card'}
-                onValueChange={() => onViewModeChange('card')}
-              >
-                <DropdownMenu.ItemIndicator />
-                <DropdownMenu.ItemIcon
-                  ios={{ name: 'square.grid.2x2' }}
-                  androidIconName="grid_view"
-                />
-                <DropdownMenu.ItemTitle>卡片</DropdownMenu.ItemTitle>
-              </DropdownMenu.CheckboxItem>
-
-              <DropdownMenu.CheckboxItem
-                key="view-list"
-                value={viewMode === 'list'}
-                onValueChange={() => onViewModeChange('list')}
-              >
-                <DropdownMenu.ItemIndicator />
-                <DropdownMenu.ItemIcon ios={{ name: 'list.bullet' }} androidIconName="format_list_bulleted" />
-                <DropdownMenu.ItemTitle>列表</DropdownMenu.ItemTitle>
-              </DropdownMenu.CheckboxItem>
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
         </DropdownMenu.Group>

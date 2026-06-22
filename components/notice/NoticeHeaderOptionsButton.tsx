@@ -1,22 +1,16 @@
 import { Pressable, StyleSheet } from 'react-native';
 import * as DropdownMenu from 'zeego/dropdown-menu';
 
+import { renderMenuCheckboxItem } from '@/components/menu/renderMenuCheckboxItem';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { LiquidGlassSurface } from '@/components/ui/LiquidGlassSurface';
 import { radius } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import {
+  CLUB_MENU_OPTIONS,
+  NOTICE_TIMELINE_MENU_OPTIONS,
+} from '@/lib/header-menu-options';
 import type { NoticeClubFilter, NoticeTimelineFilter } from '@/lib/notice-utils';
-
-const CLUB_OPTIONS: { value: NoticeClubFilter; label: string }[] = [
-  { value: 'all', label: '所有' },
-  { value: 'pathfinder', label: '前鋒會' },
-  { value: 'adventurer', label: '幼鋒會' },
-];
-
-const TIMELINE_OPTIONS: { value: NoticeTimelineFilter; label: string }[] = [
-  { value: 'active', label: '即將舉行' },
-  { value: 'past', label: '較早通告' },
-];
 
 type NoticeHeaderOptionsButtonProps = {
   club: NoticeClubFilter;
@@ -53,45 +47,25 @@ export function NoticeHeaderOptionsButton({
 
       <DropdownMenu.Content>
         <DropdownMenu.Group>
-          <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger key="club-filter">
-              <DropdownMenu.ItemTitle>對象</DropdownMenu.ItemTitle>
-            </DropdownMenu.SubTrigger>
-
-            <DropdownMenu.SubContent>
-              {CLUB_OPTIONS.map((option) => (
-                <DropdownMenu.CheckboxItem
-                  key={`club-${option.value}`}
-                  value={club === option.value}
-                  onValueChange={() => onClubChange(option.value)}
-                >
-                  <DropdownMenu.ItemIndicator />
-                  <DropdownMenu.ItemTitle>{option.label}</DropdownMenu.ItemTitle>
-                </DropdownMenu.CheckboxItem>
-              ))}
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
+          {CLUB_MENU_OPTIONS.map((option) =>
+            renderMenuCheckboxItem({
+              itemKey: `club-${option.value}`,
+              option,
+              selected: club === option.value,
+              onSelect: onClubChange,
+            }),
+          )}
         </DropdownMenu.Group>
 
         <DropdownMenu.Group>
-          <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger key="timeline-filter">
-              <DropdownMenu.ItemTitle>狀態</DropdownMenu.ItemTitle>
-            </DropdownMenu.SubTrigger>
-
-            <DropdownMenu.SubContent>
-              {TIMELINE_OPTIONS.map((option) => (
-                <DropdownMenu.CheckboxItem
-                  key={`timeline-${option.value}`}
-                  value={timeline === option.value}
-                  onValueChange={() => onTimelineChange(option.value)}
-                >
-                  <DropdownMenu.ItemIndicator />
-                  <DropdownMenu.ItemTitle>{option.label}</DropdownMenu.ItemTitle>
-                </DropdownMenu.CheckboxItem>
-              ))}
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
+          {NOTICE_TIMELINE_MENU_OPTIONS.map((option) =>
+            renderMenuCheckboxItem({
+              itemKey: `timeline-${option.value}`,
+              option,
+              selected: timeline === option.value,
+              onSelect: onTimelineChange,
+            }),
+          )}
         </DropdownMenu.Group>
       </DropdownMenu.Content>
     </DropdownMenu.Root>

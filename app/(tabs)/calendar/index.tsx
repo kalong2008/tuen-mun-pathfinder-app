@@ -1,267 +1,309 @@
-import { API } from '@/lib/api';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
-
-import { Card } from '@/components/ui/Card';
-import { LoadingView } from '@/components/ui/LoadingView';
-import { ScalePressable } from '@/components/ui/ScalePressable';
-import { SectionHeader } from '@/components/ui/SectionHeader';
-import { radius, spacing, typography } from '@/constants/theme';
-import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
-import { useAppTheme } from '@/hooks/useAppTheme';
+import { useRouter } from "expo-router";
+import React, { useCallback, useMemo, useState } from "react";
 import {
-  getCombinedMonthActivities,
-  getCombinedUpcomingActivities,
-  type ActivitiesByDate,
-  type CalendarActivity,
-  type CombinedActivity,
-} from '@/lib/calendar-utils';
+    FlatList,
+    Platform,
+    RefreshControl,
+    SectionList,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const CAMP_COLOR = '#40916C';
-const ACTIVITY_COLOR = '#74A892';
-const TEXT_COLOR = 'white';
-
-LocaleConfig.locales['zh'] = {
-  monthNames: [
-    '一月', '二月', '三月', '四月', '五月', '六月',
-    '七月', '八月', '九月', '十月', '十一月', '十二月',
-  ],
-  monthNamesShort: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-  dayNames: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
-  dayNamesShort: ['日', '一', '二', '三', '四', '五', '六'],
-  today: '今天',
-};
-LocaleConfig.defaultLocale = 'zh';
-
-function CustomDay({ date, state, marking }: any) {
-  const isToday = date.dateString === new Date().toISOString().split('T')[0];
-  const isDisabled = state === 'disabled';
-  const isCamp = !isDisabled && marking?.color === CAMP_COLOR;
-  const isStartingDay = isCamp && marking?.startingDay;
-  const isEndingDay = isCamp && marking?.endingDay;
-  const hasActivity = !isDisabled && marking?.color === ACTIVITY_COLOR;
-  const isPeriod = isCamp && !isStartingDay && !isEndingDay;
-
-  return (
-    <View
-      style={{
-        width: isPeriod ? '140%' : isCamp ? '100%' : '60%',
-        marginRight: isCamp && isStartingDay ? '-20%' : 0,
-        marginLeft: isCamp && isEndingDay ? '-20%' : 0,
-        height: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: isCamp ? CAMP_COLOR : hasActivity ? ACTIVITY_COLOR : 'transparent',
-        borderTopLeftRadius: isStartingDay ? 16 : 0,
-        borderBottomLeftRadius: isStartingDay ? 16 : 0,
-        borderTopRightRadius: isEndingDay ? 16 : 0,
-        borderBottomRightRadius: isEndingDay ? 16 : 0,
-        borderLeftWidth: isStartingDay ? 1 : 0,
-        borderRightWidth: isEndingDay ? 1 : 0,
-        borderColor: isCamp ? CAMP_COLOR : ACTIVITY_COLOR,
-        overflow: 'hidden',
-      }}
-    >
-      <Text
-        style={{
-          marginLeft: isCamp && isStartingDay ? '-20%' : 0,
-          marginRight: isCamp && isEndingDay ? '-20%' : 0,
-          fontWeight: isToday ? 'bold' : 'normal',
-          color: isDisabled
-            ? '#d9d9d9'
-            : isToday
-              ? '#1B4332'
-              : isStartingDay || isEndingDay || isCamp || hasActivity
-                ? TEXT_COLOR
-                : '#333',
-          textAlign: 'center',
-          opacity: isDisabled ? 0.3 : 1,
-        }}
-      >
-        {date.day}
-      </Text>
-    </View>
-  );
-}
-
-function ActivityRow({
-  item,
-  onPress,
-}: {
-  item: CombinedActivity;
-  onPress?: () => void;
-}) {
-  const { colors } = useAppTheme();
-  const { activity, dateLabel } = item;
-  const isCamp = activity.isCamp;
-  const content = (
-    <>
-      <Text style={[styles.activityDate, { color: colors.primary }]}>{dateLabel}</Text>
-      <View style={styles.activityDetails}>
-        <Text style={[styles.activityTitle, { color: colors.text }]}>
-          {activity.title}
-        </Text>
-        <Text style={[styles.activityMeta, { color: colors.muted }]}>
-          {activity.time} · {activity.location}
-        </Text>
-      </View>
-    </>
-  );
-
-  const rowStyle = [
-    styles.activityRow,
-    { backgroundColor: colors.surface, borderColor: colors.border },
-    isCamp && { borderLeftColor: colors.primary, borderLeftWidth: 4 },
-  ];
-
-  if (onPress) {
-    return (
-      <ScalePressable style={rowStyle} onPress={onPress}>
-        {content}
-      </ScalePressable>
-    );
-  }
-
-  return <View style={rowStyle}>{content}</View>;
-}
+import { ActivityMonthCalendar } from "@/components/activity/ActivityMonthCalendar";
+import {
+    ActivityHeader,
+    getActivityHeaderHeight,
+} from "@/components/activity/ActivityHeader";
+import { ActivityListItem } from "@/components/activity/ActivityListItem";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadingView } from "@/components/ui/LoadingView";
+import { spacing, typography } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import { useNativeTabScrollProps } from "@/hooks/useNativeTabScrollProps";
+import { API } from "@/lib/api";
+import {
+    filterCombinedActivities,
+    getAllCombinedActivities,
+    getCombinedMonthActivities,
+    groupActivitiesByMonth,
+    isRecurringMeeting,
+    type ActivitiesByDate,
+    type ActivityClubFilter,
+    type ActivityTimelineFilter,
+    type ActivityViewMode,
+    type CombinedActivity,
+} from "@/lib/calendar-utils";
+import { findNoticeForActivity, type NoticeItem } from "@/lib/notice-utils";
 
 export default function CalendarScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const tabScrollProps = useNativeTabScrollProps();
-  const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().split('T')[0]);
   const [activities, setActivities] = useState<ActivitiesByDate>({});
+  const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCalendar, setShowCalendar] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [clubFilter, setClubFilter] = useState<ActivityClubFilter>("all");
+  const [timelineFilter, setTimelineFilter] =
+    useState<ActivityTimelineFilter>("upcoming");
+  const [viewMode, setViewMode] = useState<ActivityViewMode>("calendar");
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [headerHeight, setHeaderHeight] = useState(0);
 
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const response = await fetch(API.calendar());
-        if (!response.ok) throw new Error(`Failed to load calendar: ${response.status}`);
-        setActivities(await response.json());
-      } catch (error) {
-        console.error('Error fetching activities:', error);
-      } finally {
-        setLoading(false);
+  const contentTopInset = headerHeight || getActivityHeaderHeight(insets.top);
+  const scrollContentTopInset = Math.max(0, contentTopInset - insets.top);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoadError(null);
+      const [calendarRes, noticesRes] = await Promise.all([
+        fetch(API.calendar()),
+        fetch(API.notices()),
+      ]);
+
+      if (!calendarRes.ok) {
+        throw new Error(`Failed to load calendar: ${calendarRes.status}`);
       }
-    };
 
-    fetchActivities();
+      setActivities((await calendarRes.json()) as ActivitiesByDate);
+
+      if (noticesRes.ok) {
+        setNotices((await noticesRes.json()) as NoticeItem[]);
+      }
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+      setLoadError("無法載入活動，請稍後再試");
+    }
   }, []);
 
-  const upcoming = useMemo(
-    () => getCombinedUpcomingActivities(activities, { additionalMonths: 2 }),
+  React.useEffect(() => {
+    setLoading(true);
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  }, [fetchData]);
+
+  const allActivities = useMemo(
+    () => getAllCombinedActivities(activities),
     [activities],
   );
+
+  const filteredActivities = useMemo(
+    () =>
+      filterCombinedActivities(allActivities, {
+        club: clubFilter,
+        timeline: timelineFilter,
+      }),
+    [allActivities, clubFilter, timelineFilter],
+  );
+
+  const sections = useMemo(
+    () => groupActivitiesByMonth(filteredActivities),
+    [filteredActivities],
+  );
+
   const monthActivities = useMemo(
-    () => getCombinedMonthActivities(activities, currentMonth.substring(0, 7)),
+    () =>
+      getCombinedMonthActivities(activities, currentMonth.substring(0, 7)),
     [activities, currentMonth],
   );
 
-  const markedDates = useMemo(
-    () =>
-      Object.entries(activities).reduce(
-        (acc, [date, dayActivities]) => {
-          const activity = dayActivities[0];
-          acc[date] = {
-            ...activity.marking,
-            color: activity.isCamp ? CAMP_COLOR : ACTIVITY_COLOR,
-            textColor: TEXT_COLOR,
-          };
-          return acc;
-        },
-        {} as Record<string, object>,
-      ),
-    [activities],
+  const getActivityPressHandler = useCallback(
+    (item: CombinedActivity) => {
+      if (isRecurringMeeting(item.activity)) return undefined;
+
+      const notice = findNoticeForActivity(notices, item);
+      if (!notice) return undefined;
+
+      return () => {
+        router.push({
+          pathname: "/noticeDetailModal",
+          params: { id: notice.id },
+        });
+      };
+    },
+    [notices, router],
   );
 
-  const handleActivityPress = (activity: CalendarActivity) => {
-    if (!activity.title.includes('集會')) {
-      router.push('/(tabs)/notice');
-    }
+  const renderActivityItem = useCallback(
+    (item: CombinedActivity) => (
+      <ActivityListItem item={item} onPress={getActivityPressHandler(item)} />
+    ),
+    [getActivityPressHandler],
+  );
+
+  const renderSectionItem = useCallback(
+    ({ item }: { item: CombinedActivity }) => renderActivityItem(item),
+    [renderActivityItem],
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: { title: string } }) => (
+      <Text style={[styles.sectionTitle, { color: colors.muted }]}>
+        {section.title}
+      </Text>
+    ),
+    [colors.muted],
+  );
+
+  const renderMonthListItem = useCallback(
+    ({ item }: { item: CombinedActivity }) => renderActivityItem(item),
+    [renderActivityItem],
+  );
+
+  const renderMonthEmpty = useCallback(
+    () => (
+      <Text style={[styles.emptyMonthText, { color: colors.muted }]}>
+        本月沒有活動
+      </Text>
+    ),
+    [colors.muted],
+  );
+
+  const headerProps = {
+    sticky: true,
+    onLayout: setHeaderHeight,
+    showOptions: !loading && !loadError,
+    club: clubFilter,
+    onClubChange: setClubFilter,
+    timeline: timelineFilter,
+    onTimelineChange: setTimelineFilter,
+    viewMode,
+    onViewModeChange: setViewMode,
   };
 
+  const showList =
+    !loading &&
+    !loadError &&
+    viewMode === "list" &&
+    filteredActivities.length > 0;
+  const showCalendar =
+    !loading &&
+    !loadError &&
+    viewMode === "calendar" &&
+    allActivities.length > 0;
+
+  let body: React.ReactNode = null;
+
   if (loading) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <LoadingView message="載入活動…" />
-      </View>
+    body = <LoadingView message="載入活動…" />;
+  } else if (loadError) {
+    body = (
+      <EmptyState
+        icon={<Text style={styles.emptyIcon}>!</Text>}
+        title="載入失敗"
+        description={loadError}
+        actionLabel="重試"
+        onAction={handleRefresh}
+      />
+    );
+  } else if (allActivities.length === 0) {
+    body = (
+      <EmptyState
+        icon={<Text style={styles.emptyIcon}>📅</Text>}
+        title="暫無活動"
+        description="目前沒有已排定的活動"
+      />
+    );
+  } else if (viewMode === "list" && filteredActivities.length === 0) {
+    body = (
+      <EmptyState
+        icon={<Text style={styles.emptyIcon}>📅</Text>}
+        title="沒有符合的活動"
+        description="試試其他篩選條件"
+      />
     );
   }
 
   return (
-    <ScrollView
-      {...tabScrollProps}
+    <View
+      collapsable={false}
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
     >
-        <SectionHeader title="即將舉行" />
-        {upcoming.length > 0 ? (
-          upcoming.map((item) => (
-            <ActivityRow
-              key={`${item.startDate}-${item.activity.id}-${item.activity.campKey ?? 'single'}`}
-              item={item}
-              onPress={
-                item.activity.title.includes('集會')
-                  ? undefined
-                  : () => handleActivityPress(item.activity)
-              }
+      {showList ? (
+        <SectionList
+          {...tabScrollProps}
+          style={styles.list}
+          sections={sections}
+          renderItem={renderSectionItem}
+          renderSectionHeader={renderSectionHeader}
+          keyExtractor={(item) =>
+            `${item.startDate}-${item.activity.id}-${item.activity.campKey ?? "single"}`
+          }
+          stickySectionHeadersEnabled={false}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingTop: scrollContentTopInset },
+          ]}
+          scrollIndicatorInsets={{ top: scrollContentTopInset }}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          SectionSeparatorComponent={() => (
+            <View style={styles.sectionSeparator} />
+          )}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
             />
-          ))
-        ) : (
-          <Text style={[styles.emptyText, { color: colors.muted }]}>暫無即將舉行的活動</Text>
-        )}
-
-        <Pressable
-          onPress={() => setShowCalendar((value) => !value)}
-          style={[styles.calendarToggle, { borderColor: colors.border, backgroundColor: colors.surface }]}
+          }
+        />
+      ) : showCalendar ? (
+        <View
+          style={[styles.calendarLayout, { paddingTop: contentTopInset }]}
         >
-          <Text style={[styles.calendarToggleText, { color: colors.primary }]}>
-            {showCalendar ? '收起月曆' : '顯示月曆'}
-          </Text>
-        </Pressable>
-
-        {showCalendar ? (
-          <Card style={styles.calendarCard}>
-            <Calendar
-              onMonthChange={(month: DateData) => setCurrentMonth(month.dateString)}
-              markedDates={markedDates}
-              markingType="period"
-              dayComponent={CustomDay}
-              renderHeader={(date: Date) => {
-                const year = date.getFullYear();
-                const month = date.getMonth() + 1;
-                return (
-                  <Text style={[styles.monthHeader, { color: colors.text }]}>
-                    {`${year}年${month}月`}
-                  </Text>
-                );
-              }}
+          <View
+            style={[
+              styles.stickyCalendar,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <ActivityMonthCalendar
+              activities={activities}
+              currentMonth={currentMonth}
+              onMonthChange={setCurrentMonth}
             />
-            <View style={styles.monthList}>
-              {monthActivities.length > 0 ? (
-                monthActivities.map((item) => (
-                  <ActivityRow
-                    key={`month-${item.startDate}-${item.activity.id}-${item.activity.campKey ?? 'single'}`}
-                    item={item}
-                    onPress={
-                      item.activity.title.includes('集會')
-                        ? undefined
-                        : () => handleActivityPress(item.activity)
-                    }
-                  />
-                ))
-              ) : (
-                <Text style={[styles.emptyText, { color: colors.muted }]}>本月沒有活動</Text>
-              )}
-            </View>
-          </Card>
-        ) : null}
-      </ScrollView>
+          </View>
+          <FlatList
+            {...tabScrollProps}
+            style={styles.monthList}
+            data={monthActivities}
+            renderItem={renderMonthListItem}
+            keyExtractor={(item) =>
+              `month-${item.startDate}-${item.activity.id}-${item.activity.campKey ?? "single"}`
+            }
+            contentContainerStyle={styles.monthListContent}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            ListEmptyComponent={renderMonthEmpty}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          />
+        </View>
+      ) : (
+        <View style={[styles.staticBody, { paddingTop: contentTopInset }]}>
+          {body}
+        </View>
+      )}
+
+      <ActivityHeader {...headerProps} />
+    </View>
   );
 }
 
@@ -269,56 +311,48 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxxl,
-  },
-  activityRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    marginBottom: spacing.sm,
-  },
-  activityDate: {
-    ...typography.label,
-    minWidth: 72,
-  },
-  activityDetails: {
+  list: {
     flex: 1,
   },
-  activityTitle: {
-    ...typography.bodyMedium,
-    marginBottom: spacing.xs,
+  staticBody: {
+    flex: 1,
   },
-  activityMeta: {
-    ...typography.caption,
-  },
-  emptyText: {
-    ...typography.body,
-    marginBottom: spacing.lg,
-  },
-  calendarToggle: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: radius.full,
+  listContent: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    marginVertical: spacing.lg,
+    paddingBottom: Platform.OS === "ios" ? 100 : 80,
   },
-  calendarToggleText: {
-    ...typography.label,
+  calendarLayout: {
+    flex: 1,
   },
-  calendarCard: {
-    padding: spacing.sm,
-  },
-  monthHeader: {
-    ...typography.heading,
-    marginBottom: spacing.sm,
+  stickyCalendar: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   monthList: {
+    flex: 1,
+  },
+  monthListContent: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: Platform.OS === "ios" ? 100 : 80,
+    flexGrow: 1,
+  },
+  emptyMonthText: {
+    ...typography.body,
+    paddingVertical: spacing.lg,
+  },
+  sectionTitle: {
+    ...typography.label,
+    marginBottom: spacing.sm,
     marginTop: spacing.md,
+  },
+  separator: {
+    height: spacing.sm,
+  },
+  sectionSeparator: {
+    height: spacing.xs,
+  },
+  emptyIcon: {
+    fontSize: 28,
   },
 });

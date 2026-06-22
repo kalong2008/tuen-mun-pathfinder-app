@@ -67,6 +67,7 @@ export function LiquidGlassBackdrop({
   if (canUseLiquidGlass()) {
     return (
       <GlassView
+        pointerEvents="none"
         style={[StyleSheet.absoluteFill, style]}
         glassEffectStyle={glassEffectStyle}
         colorScheme={isDark ? 'dark' : 'light'}
@@ -79,6 +80,7 @@ export function LiquidGlassBackdrop({
 
   return (
     <BlurView
+      pointerEvents="none"
       intensity={fallbackIntensity}
       tint={blurTint}
       style={[StyleSheet.absoluteFill, style]}

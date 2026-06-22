@@ -398,3 +398,113 @@ export function getMonthActivities(
   entries.sort((a, b) => a.date.localeCompare(b.date));
   return entries;
 }
+
+export type ActivityClubFilter = 'all' | 'pathfinder' | 'adventurer';
+export type ActivityTimelineFilter = 'upcoming' | 'past';
+export type ActivityViewMode = 'list' | 'calendar';
+
+export type ActivityFilters = {
+  club: ActivityClubFilter;
+  timeline: ActivityTimelineFilter;
+};
+
+export type ActivitySection = {
+  title: string;
+  data: CombinedActivity[];
+};
+
+export function isRecurringMeeting(activity: CalendarActivity): boolean {
+  return activity.title.includes('集會');
+}
+
+export function isPastCombinedActivity(item: CombinedActivity): boolean {
+  const today = dateAtMidnight(new Date().toISOString().split('T')[0]);
+  return dateAtMidnight(item.endDate) < today;
+}
+
+export function activityMatchesClubFilter(
+  activity: CalendarActivity,
+  club: ActivityClubFilter,
+): boolean {
+  if (club === 'all') return true;
+
+  const parsed = parseActivityClub(activity.title);
+  if (!parsed) return true;
+
+  switch (club) {
+    case 'pathfinder':
+      return parsed === 'PATHFINDER' || parsed === 'BOTH';
+    case 'adventurer':
+      return parsed === 'ADVENTURER' || parsed === 'BOTH';
+    default: {
+      const unreachable: never = club;
+      return unreachable;
+    }
+  }
+}
+
+export function getAllCombinedActivities(activities: ActivitiesByDate): CombinedActivity[] {
+  const entries: DatedActivity[] = [];
+
+  for (const [date, list] of Object.entries(activities)) {
+    for (const activity of list) {
+      entries.push({ date, activity });
+    }
+  }
+
+  return buildCombinedFromEntries(entries);
+}
+
+export function filterCombinedActivities(
+  items: CombinedActivity[],
+  filters: ActivityFilters,
+): CombinedActivity[] {
+  const filtered = items
+    .filter((item) => activityMatchesClubFilter(item.activity, filters.club))
+    .filter((item) =>
+      filters.timeline === 'upcoming'
+        ? !isPastCombinedActivity(item)
+        : isPastCombinedActivity(item),
+    );
+
+  filtered.sort((a, b) => {
+    if (filters.timeline === 'upcoming') {
+      const dateCompare = a.startDate.localeCompare(b.startDate);
+      if (dateCompare !== 0) return dateCompare;
+      return a.activity.time.localeCompare(b.activity.time);
+    }
+
+    const dateCompare = b.startDate.localeCompare(a.startDate);
+    if (dateCompare !== 0) return dateCompare;
+    return b.activity.time.localeCompare(a.activity.time);
+  });
+
+  return filtered;
+}
+
+export function groupActivitiesByMonth(items: CombinedActivity[]): ActivitySection[] {
+  const sections = new Map<string, CombinedActivity[]>();
+
+  for (const item of items) {
+    const [year, month] = item.startDate.split('-');
+    const key = `${year}-${month}`;
+    const existing = sections.get(key);
+    if (existing) {
+      existing.push(item);
+    } else {
+      sections.set(key, [item]);
+    }
+  }
+
+  return [...sections.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([monthKey, data]) => ({
+      title: formatActivityMonthTitle(monthKey),
+      data,
+    }));
+}
+
+export function formatActivityMonthTitle(monthKey: string): string {
+  const [year, month] = monthKey.split('-').map(Number);
+  return `${year}年${month}月`;
+}

@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignSelf: 'stretch',
-    borderRadius: radius.xl,
+    borderRadius: radius.xxl,
     borderCurve: 'continuous',
     borderWidth: StyleSheet.hairlineWidth,
     padding: spacing.md,
