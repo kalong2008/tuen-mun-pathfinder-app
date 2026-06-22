@@ -11,15 +11,15 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ActivityMonthCalendar } from "@/components/activity/ActivityMonthCalendar";
 import {
     ActivityHeader,
     getActivityHeaderHeight,
 } from "@/components/activity/ActivityHeader";
 import { ActivityListItem } from "@/components/activity/ActivityListItem";
+import { ActivityMonthCalendar } from "@/components/activity/ActivityMonthCalendar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingView } from "@/components/ui/LoadingView";
-import { spacing, typography } from "@/constants/theme";
+import { headerContentGap, spacing, typography } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useNativeTabScrollProps } from "@/hooks/useNativeTabScrollProps";
 import { API } from "@/lib/api";
@@ -56,7 +56,8 @@ export default function CalendarScreen() {
   );
   const [headerHeight, setHeaderHeight] = useState(0);
 
-  const contentTopInset = headerHeight || getActivityHeaderHeight(insets.top);
+  const contentTopInset =
+    (headerHeight || getActivityHeaderHeight(insets.top)) + headerContentGap;
   const scrollContentTopInset = Math.max(0, contentTopInset - insets.top);
 
   const fetchData = useCallback(async () => {
@@ -113,8 +114,7 @@ export default function CalendarScreen() {
   );
 
   const monthActivities = useMemo(
-    () =>
-      getCombinedMonthActivities(activities, currentMonth.substring(0, 7)),
+    () => getCombinedMonthActivities(activities, currentMonth.substring(0, 7)),
     [activities, currentMonth],
   );
 
@@ -260,9 +260,7 @@ export default function CalendarScreen() {
           }
         />
       ) : showCalendar ? (
-        <View
-          style={[styles.calendarLayout, { paddingTop: contentTopInset }]}
-        >
+        <View style={[styles.calendarLayout, { paddingTop: contentTopInset }]}>
           <View
             style={[
               styles.stickyCalendar,

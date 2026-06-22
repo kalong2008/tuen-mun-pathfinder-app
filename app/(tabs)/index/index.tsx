@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     minHeight: 44,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   headerActions: {
     flexDirection: "row",
@@ -267,12 +267,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   scrollContent: {
-    paddingTop: 44 + spacing.sm,
+    paddingTop: 44 + spacing.xs,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
   heroWrap: {
-    marginTop: spacing.sm,
     marginBottom: spacing.lg,
   },
   infoStack: {

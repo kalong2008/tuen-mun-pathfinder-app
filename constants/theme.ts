@@ -14,6 +14,9 @@ export const spacing = {
   xxxl: 48,
 } as const;
 
+/** Gap between sticky tab headers and the content below */
+export const headerContentGap = spacing.lg;
+
 export const radius = {
   sm: 8,
   md: 12,

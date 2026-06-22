@@ -1,3 +1,5 @@
+const enablePush = process.env.EXPO_PUBLIC_ENABLE_PUSH === "true";
+
 export default {
   "expo": {
     "name": "屯門前鋒會",
@@ -22,7 +24,7 @@ export default {
     "userInterfaceStyle": "light",
     "plugins": [
       "expo-router",
-      "expo-notifications",
+      ...(enablePush ? ["expo-notifications"] : []),
       [
         "expo-media-library",
         {

@@ -21,6 +21,7 @@ import {
 } from '@/lib/notification-inbox';
 import {
   getPushPermissionStatus,
+  isPushEnabled,
   registerForPushNotificationsAsync,
   type PushPermissionStatus,
 } from '@/lib/push-notifications';
@@ -124,6 +125,9 @@ export function NotificationInboxProvider({ children }: { children: ReactNode })
     refreshInbox().catch((error: unknown) => {
       console.warn('[notifications] Failed to hydrate inbox:', error);
     });
+
+    if (!isPushEnabled()) return;
+
     refreshPermissionStatus().catch((error: unknown) => {
       console.warn('[notifications] Failed to read permission status:', error);
     });
@@ -133,6 +137,8 @@ export function NotificationInboxProvider({ children }: { children: ReactNode })
   }, [refreshInbox, refreshPermissionStatus, registerForPush]);
 
   useEffect(() => {
+    if (!isPushEnabled()) return;
+
     const receivedSub = Notifications.addNotificationReceivedListener((notification) => {
       const item = notificationFromExpoRequest(notification.request, false);
       addNotificationToInbox(item)

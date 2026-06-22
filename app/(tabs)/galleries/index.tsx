@@ -21,7 +21,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { LoadingView } from '@/components/ui/LoadingView';
 import { ScalePressable } from '@/components/ui/ScalePressable';
-import { radius, spacing, typography } from '@/constants/theme';
+import { headerContentGap, radius, spacing, typography } from '@/constants/theme';
 import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import {
@@ -214,7 +214,8 @@ export default function GalleriesListScreen() {
   const [viewMode, setViewMode] = React.useState<GalleryViewMode>('card');
   const [headerHeight, setHeaderHeight] = React.useState(0);
 
-  const contentTopInset = headerHeight || getGalleryPhotosHeaderHeight(insets.top);
+  const contentTopInset =
+    (headerHeight || getGalleryPhotosHeaderHeight(insets.top)) + headerContentGap;
   const scrollContentTopInset = Math.max(0, contentTopInset - insets.top);
 
   const availableYears = React.useMemo(() => extractGalleryYears(galleries), [galleries]);

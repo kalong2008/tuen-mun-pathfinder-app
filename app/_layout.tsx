@@ -2,7 +2,7 @@ import { createNavigationTheme } from '@/constants/navigation-theme';
 import { HomeMenuProvider } from '@/contexts/HomeMenuContext';
 import { NotificationInboxProvider } from '@/contexts/NotificationInboxContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { configureNotificationHandler } from '@/lib/push-notifications';
+import { configureNotificationHandler, isPushEnabled } from '@/lib/push-notifications';
 import { normalizeNotificationScreenPath } from '@/lib/notification-inbox';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
@@ -29,6 +29,8 @@ function RootLayoutNav() {
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
+    if (!isPushEnabled()) return;
+
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
 

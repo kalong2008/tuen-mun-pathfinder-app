@@ -6,7 +6,12 @@ import { API } from '@/lib/api';
 
 export type PushPermissionStatus = 'granted' | 'denied' | 'undetermined';
 
+export function isPushEnabled(): boolean {
+  return process.env.EXPO_PUBLIC_ENABLE_PUSH === 'true';
+}
+
 export async function getPushPermissionStatus(): Promise<PushPermissionStatus> {
+  if (!isPushEnabled()) return 'denied';
   const { status } = await Notifications.getPermissionsAsync();
   if (status === 'granted') return 'granted';
   if (status === 'denied') return 'denied';
@@ -22,6 +27,11 @@ function logPushRegistrationError(errorMessage: string) {
 }
 
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
+  if (!isPushEnabled()) {
+    logPushRegistrationInfo('Push notifications disabled (set EXPO_PUBLIC_ENABLE_PUSH=true to enable)');
+    return null;
+  }
+
   try {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
@@ -86,6 +96,8 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 }
 
 export function configureNotificationHandler() {
+  if (!isPushEnabled()) return;
+
   try {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({

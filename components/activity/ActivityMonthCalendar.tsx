@@ -1,23 +1,54 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
+import { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { Calendar, DateData, LocaleConfig } from "react-native-calendars";
 
-import { Card } from '@/components/ui/Card';
-import { spacing, typography } from '@/constants/theme';
-import { useAppTheme } from '@/hooks/useAppTheme';
-import type { ActivitiesByDate } from '@/lib/calendar-utils';
+import { Card } from "@/components/ui/Card";
+import { spacing, typography } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
+import type { ActivitiesByDate } from "@/lib/calendar-utils";
 
-LocaleConfig.locales['zh'] = {
+LocaleConfig.locales["zh"] = {
   monthNames: [
-    '一月', '二月', '三月', '四月', '五月', '六月',
-    '七月', '八月', '九月', '十月', '十一月', '十二月',
+    "一月",
+    "二月",
+    "三月",
+    "四月",
+    "五月",
+    "六月",
+    "七月",
+    "八月",
+    "九月",
+    "十月",
+    "十一月",
+    "十二月",
   ],
-  monthNamesShort: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-  dayNames: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
-  dayNamesShort: ['日', '一', '二', '三', '四', '五', '六'],
-  today: '今天',
+  monthNamesShort: [
+    "1月",
+    "2月",
+    "3月",
+    "4月",
+    "5月",
+    "6月",
+    "7月",
+    "8月",
+    "9月",
+    "10月",
+    "11月",
+    "12月",
+  ],
+  dayNames: [
+    "星期日",
+    "星期一",
+    "星期二",
+    "星期三",
+    "星期四",
+    "星期五",
+    "星期六",
+  ],
+  dayNamesShort: ["日", "一", "二", "三", "四", "五", "六"],
+  today: "今天",
 };
-LocaleConfig.defaultLocale = 'zh';
+LocaleConfig.defaultLocale = "zh";
 
 type CalendarDayProps = {
   date?: { day: number; dateString: string };
@@ -46,9 +77,9 @@ function CalendarDay({
 }: CalendarDayProps) {
   if (!date) return null;
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const isToday = date.dateString === today;
-  const isDisabled = state === 'disabled';
+  const isDisabled = state === "disabled";
   const isCamp = !isDisabled && marking?.color === campColor;
   const isStartingDay = isCamp && marking?.startingDay;
   const isEndingDay = isCamp && marking?.endingDay;
@@ -59,13 +90,17 @@ function CalendarDay({
   return (
     <View
       style={{
-        width: isPeriod ? '140%' : isCamp ? '100%' : '60%',
-        marginRight: isCamp && isStartingDay ? '-20%' : 0,
-        marginLeft: isCamp && isEndingDay ? '-20%' : 0,
+        width: isPeriod ? "140%" : isCamp ? "100%" : "60%",
+        marginRight: isCamp && isStartingDay ? "-20%" : 0,
+        marginLeft: isCamp && isEndingDay ? "-20%" : 0,
         height: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: isCamp ? campColor : hasActivity ? activityColor : 'transparent',
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: isCamp
+          ? campColor
+          : hasActivity
+            ? activityColor
+            : "transparent",
         borderTopLeftRadius: isStartingDay ? 16 : 0,
         borderBottomLeftRadius: isStartingDay ? 16 : 0,
         borderTopRightRadius: isEndingDay ? 16 : 0,
@@ -73,22 +108,22 @@ function CalendarDay({
         borderLeftWidth: isStartingDay ? 1 : 0,
         borderRightWidth: isEndingDay ? 1 : 0,
         borderColor: isCamp ? campColor : activityColor,
-        overflow: 'hidden',
+        overflow: "hidden",
       }}
     >
       <Text
         style={{
-          marginLeft: isCamp && isStartingDay ? '-20%' : 0,
-          marginRight: isCamp && isEndingDay ? '-20%' : 0,
-          fontWeight: isToday ? 'bold' : 'normal',
+          marginLeft: isCamp && isStartingDay ? "-20%" : 0,
+          marginRight: isCamp && isEndingDay ? "-20%" : 0,
+          fontWeight: isToday ? "bold" : "normal",
           color: isDisabled
             ? disabledTextColor
             : isToday && !marked
               ? todayTextColor
               : marked
-                ? '#FFFFFF'
+                ? "#FFFFFF"
                 : defaultTextColor,
-          textAlign: 'center',
+          textAlign: "center",
           opacity: isDisabled ? 0.3 : 1,
         }}
       >
@@ -121,7 +156,7 @@ export function ActivityMonthCalendar({
           acc[date] = {
             ...activity.marking,
             color: activity.isCamp ? campColor : activityColor,
-            textColor: '#FFFFFF',
+            textColor: "#FFFFFF",
           };
           return acc;
         },
@@ -134,6 +169,7 @@ export function ActivityMonthCalendar({
     <Card style={styles.calendarCard}>
       <Calendar
         current={currentMonth}
+        enableSwipeMonths
         onMonthChange={(month: DateData) => onMonthChange(month.dateString)}
         markedDates={markedDates}
         markingType="period"
@@ -157,7 +193,7 @@ export function ActivityMonthCalendar({
           );
         }}
         theme={{
-          calendarBackground: 'transparent',
+          calendarBackground: "transparent",
           textSectionTitleColor: colors.muted,
           arrowColor: colors.primary,
           monthTextColor: colors.text,
