@@ -1,8 +1,10 @@
 import { forwardRef } from 'react';
-import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
+import { Platform, StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
 import { radius, spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
+
+const INPUT_HEIGHT = 48;
 
 type TextFieldProps = TextInputProps & {
   label: string;
@@ -23,6 +25,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         placeholderTextColor={colors.muted}
         multiline={multiline}
         textAlignVertical={multiline ? 'top' : 'center'}
+        includeFontPadding={false}
         style={[
           multiline ? styles.messageInput : styles.input,
           {
@@ -47,11 +50,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   input: {
-    minHeight: 48,
+    height: INPUT_HEIGHT,
     borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    ...typography.body,
+    fontSize: typography.body.fontSize,
+    fontWeight: typography.body.fontWeight,
+    ...Platform.select({
+      ios: {
+        paddingVertical: (INPUT_HEIGHT - typography.body.fontSize) / 2,
+      },
+      android: {
+        paddingVertical: 0,
+      },
+      default: {},
+    }),
   },
   messageInput: {
     minHeight: 120,

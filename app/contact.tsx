@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/Button';
 import {
   Alert,
   Keyboard,
-  KeyboardAvoidingView,
   Linking,
   Platform,
   Pressable,
@@ -147,15 +146,13 @@ export default function ContactScreen() {
   return (
     <MenuPageLayout route="/contact" title="聯絡我們">
       <Screen scroll={false} padded={false} edges={[]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        <ScrollView
           style={styles.flex}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
-        >
-          <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets
+          contentInsetAdjustmentBehavior="automatic"
         >
           <View style={styles.section}>
             <SectionHeader title="關於我們" icon="info.circle.fill" />
@@ -273,8 +270,7 @@ export default function ContactScreen() {
               />
             </Card>
           </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+        </ScrollView>
       </Screen>
     </MenuPageLayout>
   );
@@ -284,7 +280,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    paddingBottom: spacing.lg,
   },
   section: {
     marginBottom: spacing.xl,

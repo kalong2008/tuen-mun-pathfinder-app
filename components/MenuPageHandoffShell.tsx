@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { MenuPageHeader } from '@/components/MenuPageHeader';
-import { radius, spacing } from '@/constants/theme';
+import { headerContentGap, radius } from '@/constants/theme';
 import { useHomeMenu, useMenuHandoff } from '@/contexts/HomeMenuContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    paddingTop: spacing.lg,
+    paddingTop: headerContentGap,
   },
 });
