@@ -1,3 +1,10 @@
+import {
+  findCampDateRangeForDate,
+  formatActivityDate,
+  formatActivityDateRange,
+  type ActivitiesByDate,
+} from '@/lib/calendar-utils';
+
 export type NoticeItem = {
   id: string;
   title: string;
@@ -27,6 +34,17 @@ export function expandNoticeTargets(targets: string[]): string[] {
   return expanded;
 }
 
+export function getClubShortLabel(label: string): string {
+  switch (label) {
+    case '前鋒會':
+      return '前';
+    case '幼鋒會':
+      return '幼';
+    default:
+      return label;
+  }
+}
+
 export function hasBothNoticeTargets(targets: string[]): boolean {
   const expanded = expandNoticeTargets(targets);
   return expanded.includes('前鋒會') && expanded.includes('幼鋒會');
@@ -39,6 +57,58 @@ export function formatNoticeDate(dateString: string): string {
   } catch {
     return dateString;
   }
+}
+
+function parseNoticeDateParts(dateString: string): { year: number; month: number; day: number } {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return { year, month, day };
+}
+
+export function formatNoticeDateRange(startDate: string, endDate: string): string {
+  if (startDate === endDate) {
+    return formatNoticeDate(startDate);
+  }
+
+  const start = parseNoticeDateParts(startDate);
+  const end = parseNoticeDateParts(endDate);
+
+  if (start.year === end.year) {
+    if (start.month === end.month) {
+      return `${start.year}年${start.month}月${start.day}–${end.day}日`;
+    }
+    return `${start.year}年${start.month}月${start.day}–${end.month}月${end.day}日`;
+  }
+
+  return `${formatNoticeDate(startDate)}–${formatNoticeDate(endDate)}`;
+}
+
+const NOTICE_TITLE_PREFIX = /^\d{4}年\d{1,2}月/;
+
+export function getNoticeActivityName(notice: NoticeItem): string {
+  const name = notice.title.replace(NOTICE_TITLE_PREFIX, '').trim();
+  return name || notice.activityType;
+}
+
+export function getNoticeDisplayDate(
+  notice: NoticeItem,
+  activities?: ActivitiesByDate,
+  options?: { includeYear?: boolean },
+): string {
+  const includeYear = options?.includeYear ?? true;
+  const campRange = activities ? findCampDateRangeForDate(activities, notice.date) : null;
+
+  if (!includeYear) {
+    if (campRange) {
+      return formatActivityDateRange(campRange.startDate, campRange.endDate);
+    }
+    return formatActivityDate(notice.date);
+  }
+
+  if (campRange) {
+    return formatNoticeDateRange(campRange.startDate, campRange.endDate);
+  }
+
+  return formatNoticeDate(notice.date);
 }
 
 export function isNewNotice(dateString: string): boolean {

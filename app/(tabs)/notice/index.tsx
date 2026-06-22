@@ -20,7 +20,6 @@ import {
   groupNoticesForTimeline,
   type NoticeItem,
 } from '@/lib/notice-utils';
-
 function ColorLegend() {
   const { colors } = useAppTheme();
   const items = [
@@ -136,23 +135,23 @@ export default function NoticeScreen() {
 
   return (
     <SectionList
-        {...tabScrollProps}
-        style={styles.list}
-        sections={sections}
-        renderItem={renderNoticeItem}
-        renderSectionHeader={renderSectionHeader}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListHeaderComponent={<ColorLegend />}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-          />
-        }
-        stickySectionHeadersEnabled={false}
+      {...tabScrollProps}
+      style={styles.list}
+      sections={sections}
+      renderItem={renderNoticeItem}
+      renderSectionHeader={renderSectionHeader}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.listContent}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListHeaderComponent={<ColorLegend />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.primary}
+        />
+      }
+      stickySectionHeadersEnabled={false}
     />
   );
 }

@@ -115,6 +115,43 @@ function splitContiguousDateGroups(dates: string[]): string[][] {
   return groups;
 }
 
+export function findCampDateRangeForDate(
+  activities: ActivitiesByDate,
+  dateString: string,
+): { startDate: string; endDate: string } | null {
+  const activitiesOnDate = activities[dateString];
+  if (!activitiesOnDate?.length) {
+    return null;
+  }
+
+  const campActivity = activitiesOnDate.find((activity) => activity.campKey);
+  if (!campActivity?.campKey) {
+    return null;
+  }
+
+  const campKey = campActivity.campKey;
+  const dates: string[] = [];
+
+  for (const [date, list] of Object.entries(activities)) {
+    for (const activity of list) {
+      if (activity.campKey === campKey) {
+        dates.push(date);
+      }
+    }
+  }
+
+  for (const dateGroup of splitContiguousDateGroups(dates)) {
+    if (dateGroup.includes(dateString)) {
+      return {
+        startDate: dateGroup[0],
+        endDate: dateGroup[dateGroup.length - 1],
+      };
+    }
+  }
+
+  return null;
+}
+
 export function formatActivityDateRange(startDate: string, endDate: string): string {
   if (startDate === endDate) {
     return formatActivityDate(startDate);
@@ -128,14 +165,14 @@ export function formatActivityDateRange(startDate: string, endDate: string): str
   const endDay = end.getDate();
 
   if (startMonth === endMonth) {
-    return `${startMonth}月${startDay}日–${endDay}日`;
+    return `${startMonth}月${startDay}–${endDay}日`;
   }
 
-  return `${startMonth}月${startDay}日–${endMonth}月${endDay}日`;
+  return `${startMonth}月${startDay}–${endMonth}月${endDay}日`;
 }
 
 function buildCombinedFromEntries(entries: DatedActivity[]): CombinedActivity[] {
-  const campGroups = new Map<string, { activity: CalendarActivity; dates: string[] }>();
+  const campGroups = new Map<string, DatedActivity[]>();
   const singles: DatedActivity[] = [];
 
   for (const entry of entries) {
@@ -143,9 +180,9 @@ function buildCombinedFromEntries(entries: DatedActivity[]): CombinedActivity[] 
     if (activity.campKey) {
       const existing = campGroups.get(activity.campKey);
       if (!existing) {
-        campGroups.set(activity.campKey, { activity, dates: [date] });
+        campGroups.set(activity.campKey, [entry]);
       } else {
-        existing.dates.push(date);
+        existing.push(entry);
       }
     } else {
       singles.push(entry);
@@ -154,12 +191,18 @@ function buildCombinedFromEntries(entries: DatedActivity[]): CombinedActivity[] 
 
   const combined: CombinedActivity[] = [];
 
-  for (const group of campGroups.values()) {
-    for (const dateGroup of splitContiguousDateGroups(group.dates)) {
+  for (const groupEntries of campGroups.values()) {
+    const activityByDate = new Map(groupEntries.map((entry) => [entry.date, entry.activity]));
+    const dates = groupEntries.map((entry) => entry.date);
+
+    for (const dateGroup of splitContiguousDateGroups(dates)) {
       const startDate = dateGroup[0];
       const endDate = dateGroup[dateGroup.length - 1];
+      const activity = activityByDate.get(startDate);
+      if (!activity) continue;
+
       combined.push({
-        activity: group.activity,
+        activity,
         startDate,
         endDate,
         dateLabel: formatActivityDateRange(startDate, endDate),
@@ -216,17 +259,18 @@ export function getCombinedUpcomingActivities(
       ? getVisibleMonthKeys(additionalMonths + 1)
       : null;
   const today = dateAtMidnight(new Date().toISOString().split('T')[0]);
-  const campGroups = new Map<string, { activity: CalendarActivity; dates: string[] }>();
+  const campGroups = new Map<string, DatedActivity[]>();
   const singles: DatedActivity[] = [];
 
   for (const [date, list] of Object.entries(activities)) {
     for (const activity of list) {
       if (activity.campKey) {
         const existing = campGroups.get(activity.campKey);
+        const entry = { date, activity };
         if (!existing) {
-          campGroups.set(activity.campKey, { activity, dates: [date] });
+          campGroups.set(activity.campKey, [entry]);
         } else {
-          existing.dates.push(date);
+          existing.push(entry);
         }
       } else if (dateAtMidnight(date) >= today) {
         singles.push({ date, activity });
@@ -236,14 +280,20 @@ export function getCombinedUpcomingActivities(
 
   const combined: CombinedActivity[] = [];
 
-  for (const group of campGroups.values()) {
-    for (const dateGroup of splitContiguousDateGroups(group.dates)) {
+  for (const groupEntries of campGroups.values()) {
+    const activityByDate = new Map(groupEntries.map((entry) => [entry.date, entry.activity]));
+    const dates = groupEntries.map((entry) => entry.date);
+
+    for (const dateGroup of splitContiguousDateGroups(dates)) {
       const startDate = dateGroup[0];
       const endDate = dateGroup[dateGroup.length - 1];
       if (dateAtMidnight(endDate) < today) continue;
 
+      const activity = activityByDate.get(startDate);
+      if (!activity) continue;
+
       combined.push({
-        activity: group.activity,
+        activity,
         startDate,
         endDate,
         dateLabel: formatActivityDateRange(startDate, endDate),

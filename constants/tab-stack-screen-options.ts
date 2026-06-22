@@ -3,13 +3,6 @@ import { StyleSheet } from 'react-native';
 import { spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 
-/** Hide native top edge — custom gradual glass header handles the fade. */
-export const customHeaderScrollEdgeOptions = {
-  scrollEdgeEffects: {
-    top: 'hidden' as const,
-  },
-};
-
 export function useTabStackScreenOptions() {
   const { colors } = useAppTheme();
 

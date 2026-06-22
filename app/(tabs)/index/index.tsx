@@ -6,14 +6,11 @@ import {
   View,
 } from 'react-native';
 
+import { HomePreviewTile } from '@/components/home/HomePreviewTile';
 import { AppLogo } from '@/components/AppLogo';
-import { DailyVerseCard } from '@/components/home/DailyVerseCard';
-import { HomeQuickCard } from '@/components/home/HomeQuickCard';
 import { HomeHeaderLogin, HomeHeaderMenuButton } from '@/components/HomeHeader';
-import { ClubCard } from '@/components/ui/ClubCard';
 import { HeroBanner } from '@/components/ui/HeroBanner';
 import { Screen } from '@/components/ui/Screen';
-import { SectionHeader } from '@/components/ui/SectionHeader';
 import { spacing, TARGET_COLORS } from '@/constants/theme';
 import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -27,10 +24,15 @@ import {
   type ActivityClub,
 } from '@/lib/calendar-utils';
 import {
-  formatNoticeDate,
+  expandNoticeTargets,
+  getClubShortLabel,
+  getNoticeActivityName,
+  getNoticeDisplayDate,
   getNoticePreview,
+  isPastNotice,
   type NoticeItem,
 } from '@/lib/notice-utils';
+import { getSingleTargetColor } from '@/lib/target-colors';
 import { HERO_BANNER_PHOTO } from '@/lib/photo-url';
 
 type DailyVerse = {
@@ -68,6 +70,7 @@ export default function HomeScreen() {
   const [verseError, setVerseError] = useState<string | null>(null);
   const [nextEvent, setNextEvent] = useState<NextEventPreview | null>(null);
   const [noticePreview, setNoticePreview] = useState<NoticeItem[]>([]);
+  const [calendarActivities, setCalendarActivities] = useState<ActivitiesByDate>({});
 
   useEffect(() => {
     async function loadHomeData() {
@@ -89,6 +92,7 @@ export default function HomeScreen() {
 
         if (calendarRes.ok) {
           const calendarData = (await calendarRes.json()) as ActivitiesByDate;
+          setCalendarActivities(calendarData);
           const next = getNextUpcomingActivity(calendarData);
           if (next) {
             setNextEvent({
@@ -119,6 +123,9 @@ export default function HomeScreen() {
     loadHomeData();
   }, []);
 
+  const latestNotice = noticePreview[0];
+  const latestNoticePast = latestNotice ? isPastNotice(latestNotice.date) : false;
+
   return (
     <Screen scroll={false} padded={false} edges={['top']}>
       <View collapsable={false} style={styles.screenRoot}>
@@ -137,70 +144,69 @@ export default function HomeScreen() {
           />
         </View>
 
-        <DailyVerseCard
-          style={styles.verseCard}
-          passage={dailyVerse?.passage}
-          citation={dailyVerse?.citation}
-          version={dailyVerse?.version}
-          loading={verseLoading}
-          error={verseError}
-        />
-
-        <View style={styles.quickRow}>
-          {noticePreview[0] ? (
-            <HomeQuickCard
-              variant="notice"
-              title={noticePreview[0].title}
-              subtitle={formatNoticeDate(noticePreview[0].date)}
-              emptyText="暫無最新通告"
-              onPress={() =>
-                router.push({
-                  pathname: '/noticeDetailModal',
-                  params: { id: noticePreview[0].id },
-                })
-              }
-            />
-          ) : null}
-
-          <HomeQuickCard
-            variant="activity"
-            title={nextEvent?.name}
-            subtitle={nextEvent?.date}
-            emptyText="暫無即將舉行的活動"
-            badges={
-              nextEvent?.club
-                ? getActivityClubBadges(nextEvent.club).map((badge) => ({
-                    label: badge.label,
-                    color: getClubColor(badge.club),
-                  }))
-                : []
-            }
-            onPress={() => router.push('/(tabs)/calendar')}
+        <View style={styles.infoStack}>
+          <HomePreviewTile
+            label="今日經文"
+            icon="bookmark.fill"
+            tone="primary"
+            name={verseLoading ? undefined : dailyVerse?.passage}
+            date={verseLoading ? undefined : dailyVerse?.citation}
+            loading={verseLoading}
+            error={verseError}
           />
-        </View>
 
-        <View style={styles.section}>
-          <SectionHeader title="認識我們" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.clubScroll}
-          >
-            <View style={styles.clubCardWrap}>
-              <ClubCard
-                accent="PATHFINDER"
-                title="前鋒會"
-                description="為 10 至 15 歲青少年而設，透過探索、露營與自然研究，開闊視野並建立與上帝的關係。"
+          <View style={styles.previewRow}>
+            <View style={styles.previewColumn}>
+              <HomePreviewTile
+                label="下一活動"
+                icon="calendar.circle.fill"
+                tone="secondary"
+              name={nextEvent?.name}
+              date={nextEvent?.date}
+              tags={
+                nextEvent?.club
+                  ? getActivityClubBadges(nextEvent.club).map((badge) => ({
+                      label: getClubShortLabel(badge.label),
+                      color: getClubColor(badge.club),
+                    }))
+                  : []
+              }
+                emptyText="暫無即將舉行的活動"
+                onPress={() => router.push('/(tabs)/calendar')}
               />
             </View>
-            <View style={styles.clubCardWrap}>
-              <ClubCard
-                accent="ADVENTURER"
-                title="幼鋒會"
-                description="為 6 至 9 歲兒童而設，幫助孩子在群體中學習相處、獨立與照顧自己。"
+
+            <View style={styles.previewColumn}>
+              <HomePreviewTile
+                label="最新通告"
+                icon="bell.fill"
+                tone="accent"
+              name={latestNotice ? getNoticeActivityName(latestNotice) : undefined}
+              date={
+                latestNotice
+                  ? getNoticeDisplayDate(latestNotice, calendarActivities, { includeYear: false })
+                  : undefined
+              }
+              tags={
+                latestNotice
+                  ? expandNoticeTargets(latestNotice.target).map((target) => ({
+                      label: getClubShortLabel(target),
+                      color: getSingleTargetColor(target, latestNoticePast),
+                    }))
+                  : []
+              }
+                emptyText="暫無最新通告"
+                onPress={() =>
+                  latestNotice
+                    ? router.push({
+                        pathname: '/noticeDetailModal',
+                        params: { id: latestNotice.id },
+                      })
+                    : router.push('/(tabs)/notice')
+                }
               />
             </View>
-          </ScrollView>
+          </View>
         </View>
       </ScrollView>
 
@@ -253,25 +259,19 @@ const styles = StyleSheet.create({
   },
   heroWrap: {
     marginTop: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
-  verseCard: {
-    marginBottom: spacing.md,
+  infoStack: {
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
-  quickRow: {
+  previewRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.xl,
     alignItems: 'stretch',
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  clubScroll: {
     gap: spacing.md,
-    paddingRight: spacing.lg,
   },
-  clubCardWrap: {
-    width: 280,
+  previewColumn: {
+    flex: 1,
+    minWidth: 0,
   },
 });

@@ -1,64 +1,16 @@
-import {
-  LayoutChangeEvent,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GalleryHeaderOptionsButton } from "@/components/gallery/GalleryHeaderOptionsButton";
-import {
-  GRADUAL_GLASS_FADE_HEIGHT,
-  GradualLiquidGlassBackdrop,
-} from "@/components/ui/LiquidGlassSurface";
-import { spacing, typography } from "@/constants/theme";
-import { useAppTheme } from "@/hooks/useAppTheme";
-import type { GallerySortOption, GalleryViewMode } from "@/lib/gallery-utils";
+import { GalleryHeaderOptionsButton } from '@/components/gallery/GalleryHeaderOptionsButton';
+import { LiquidGlassBackdrop } from '@/components/ui/LiquidGlassSurface';
+import { spacing, typography } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/useAppTheme';
+import type { GallerySortOption, GalleryViewMode } from '@/lib/gallery-utils';
 
 const TITLE_BLOCK_HEIGHT = 41 + spacing.xs + 20;
 
 export function getGalleryPhotosHeaderHeight(topInset: number) {
-  return Math.max(topInset, spacing.sm) + TITLE_BLOCK_HEIGHT;
-}
-
-export type GalleryHeaderContentInsetConfig = {
-  /** Subtracted from measured/estimated header height (switch profile). */
-  fadeHeight: number;
-  /**
-   * Initial profile (ratio < 1): target inset as a fraction of header height.
-   * Switch profile (ratio > 1): minimum inset floor combined with fade overlap.
-   */
-  minHeightRatio: number;
-};
-
-/** First load / card view — minHeightRatio is the target inset fraction. */
-export const GALLERY_HEADER_CONTENT_INSET_INITIAL: GalleryHeaderContentInsetConfig =
-  {
-    fadeHeight: GRADUAL_GLASS_FADE_HEIGHT,
-    minHeightRatio: 1.11,
-  };
-
-/** After switching card ↔ list (FlatList remounts with measured header height). */
-export const GALLERY_HEADER_CONTENT_INSET_VIEW_SWITCH: GalleryHeaderContentInsetConfig =
-  {
-    fadeHeight: GRADUAL_GLASS_FADE_HEIGHT,
-    minHeightRatio: 1.11,
-  };
-
-/** List top spacer height for the active inset profile. */
-export function getGalleryPhotosHeaderContentInset(
-  headerHeight: number,
-  config: GalleryHeaderContentInsetConfig,
-) {
-  const fadeInset = headerHeight - config.fadeHeight;
-  const ratioInset = headerHeight * config.minHeightRatio;
-
-  if (config.minHeightRatio < 1) {
-    return ratioInset;
-  }
-
-  return Math.max(fadeInset, ratioInset);
+  return Math.max(topInset, spacing.sm) + TITLE_BLOCK_HEIGHT + spacing.md;
 }
 
 type GalleryPhotosHeaderProps = {
@@ -109,10 +61,7 @@ export function GalleryPhotosHeader({
     <View style={styles.row}>
       <View style={styles.titleBlock}>
         <Text style={[styles.title, { color: colors.text }]}>相簿</Text>
-        <Text
-          style={[styles.subtitle, { color: colors.muted }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.subtitle, { color: colors.muted }]} numberOfLines={1}>
           {subtitle}
         </Text>
       </View>
@@ -157,7 +106,7 @@ export function GalleryPhotosHeader({
       onLayout={handleLayout}
       style={[styles.stickyWrapper, { paddingTop }]}
     >
-      <GradualLiquidGlassBackdrop />
+      <LiquidGlassBackdrop />
       <View style={styles.container}>{content}</View>
     </View>
   );
@@ -165,19 +114,21 @@ export function GalleryPhotosHeader({
 
 const styles = StyleSheet.create({
   stickyWrapper: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 10,
+    overflow: 'hidden',
   },
   container: {
     paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
   },
   row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: spacing.md,
   },
   titleBlock: {
@@ -187,9 +138,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 34,
-    fontWeight: "700",
+    fontWeight: '700',
     lineHeight: 41,
-    letterSpacing: Platform.OS === "ios" ? 0.37 : 0,
+    letterSpacing: Platform.OS === 'ios' ? 0.37 : 0,
   },
   subtitle: {
     ...typography.body,

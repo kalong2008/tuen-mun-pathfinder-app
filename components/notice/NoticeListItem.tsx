@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { ScalePressable } from '@/components/ui/ScalePressable';
 import { radius, spacing, typography } from '@/constants/theme';
@@ -18,6 +18,7 @@ type NoticeListItemProps = {
   onPress: () => void;
   /** Home preview uses a tighter layout without activity type. */
   variant?: 'full' | 'preview';
+  style?: ViewStyle;
 };
 
 function NoticeTargetTags({ targets, past }: { targets: string[]; past: boolean }) {
@@ -47,6 +48,7 @@ export const NoticeListItem = React.memo(function NoticeListItem({
   notice,
   onPress,
   variant = 'full',
+  style,
 }: NoticeListItemProps) {
   const { colors } = useAppTheme();
   const past = isPastNotice(notice.date);
@@ -68,6 +70,7 @@ export const NoticeListItem = React.memo(function NoticeListItem({
           borderLeftColor: accentColor,
           opacity: past ? 0.72 : 1,
         },
+        style,
       ]}
       onPress={onPress}
     >

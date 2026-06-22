@@ -43,7 +43,6 @@ const MAPPING: Record<string, ComponentProps<typeof MaterialIcons>['name']> = {
   'phone.fill': 'phone',
   'clock.fill': 'access-time',
   'bookmark.fill': 'bookmark',
-  'book.fill': 'menu-book',
   'gearshape.fill': 'settings',
   'line.3.horizontal.decrease.circle': 'tune',
 };

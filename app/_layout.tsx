@@ -89,26 +89,21 @@ function RootLayoutNav() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="noticeDetailModal"
-          options={{
-            presentation: 'formSheet',
-            sheetAllowedDetents: 'fitToContents',
-            sheetGrabberVisible: true,
-            sheetCornerRadius: 16,
-            headerShown: true,
-            headerTitleAlign: 'center',
-            headerBackButtonDisplayMode: 'minimal',
-            title: '通告',
-            contentStyle: { flex: 1 },
-          }}
-        />
-        <Stack.Screen
           name="galleryModal"
           options={{
             headerShown: false,
             presentation: 'transparentModal',
             animation: 'fade',
             contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
+        <Stack.Screen
+          name="noticeDetailModal"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [1],
+            sheetGrabberVisible: true,
+            contentStyle: { flex: 1 },
           }}
         />
         <Stack.Screen name="+not-found" />
