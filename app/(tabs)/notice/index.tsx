@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Platform,
@@ -19,7 +20,6 @@ import {
   groupNoticesForTimeline,
   type NoticeItem,
 } from '@/lib/notice-utils';
-import NoticeDetailModal from '../../noticeDetailModal';
 
 function ColorLegend() {
   const { colors } = useAppTheme();
@@ -42,13 +42,12 @@ function ColorLegend() {
 }
 
 export default function NoticeScreen() {
+  const router = useRouter();
   const { colors } = useAppTheme();
   const tabScrollProps = useNativeTabScrollProps();
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchNotices = useCallback(async () => {
@@ -78,10 +77,15 @@ export default function NoticeScreen() {
 
   const sections = useMemo(() => groupNoticesForTimeline(notices), [notices]);
 
-  const openNotice = useCallback((notice: NoticeItem) => {
-    setSelectedNotice(notice);
-    setModalVisible(true);
-  }, []);
+  const openNotice = useCallback(
+    (notice: NoticeItem) => {
+      router.push({
+        pathname: '/noticeDetailModal',
+        params: { id: notice.id },
+      });
+    },
+    [router],
+  );
 
   const renderNoticeItem = useCallback(
     ({ item }: { item: NoticeItem }) => (
@@ -131,8 +135,7 @@ export default function NoticeScreen() {
   }
 
   return (
-    <>
-      <SectionList
+    <SectionList
         {...tabScrollProps}
         style={styles.list}
         sections={sections}
@@ -150,14 +153,7 @@ export default function NoticeScreen() {
           />
         }
         stickySectionHeadersEnabled={false}
-      />
-
-      <NoticeDetailModal
-        visible={modalVisible}
-        notice={selectedNotice}
-        onClose={() => setModalVisible(false)}
-      />
-    </>
+    />
   );
 }
 

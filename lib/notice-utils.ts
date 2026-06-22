@@ -63,18 +63,9 @@ export function sortNotices(notices: NoticeItem[]): NoticeItem[] {
 }
 
 export function getNoticePreview(notices: NoticeItem[], limit = 2): NoticeItem[] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const upcoming = notices
+  return sortNotices(notices)
     .filter((n) => !isPastNotice(n.date))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  if (upcoming.length >= limit) {
-    return upcoming.slice(0, limit);
-  }
-
-  return sortNotices(notices).slice(0, limit);
+    .slice(0, limit);
 }
 
 export type NoticeSection = {

@@ -19,7 +19,23 @@ import {
 import { spacing } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 
-export const GRADUAL_GLASS_FADE_HEIGHT = spacing.xxxl;
+export const GRADUAL_GLASS_FADE_HEIGHT = spacing.xxxl + spacing.lg;
+
+/** Ease-out alpha stops for the header glass mask (black = opaque glass). */
+const GRADUAL_GLASS_FADE_MASK = {
+  colors: [
+    "#000000",
+    "#000000",
+    "rgba(0, 0, 0, 0.94)",
+    "rgba(0, 0, 0, 0.78)",
+    "rgba(0, 0, 0, 0.56)",
+    "rgba(0, 0, 0, 0.34)",
+    "rgba(0, 0, 0, 0.14)",
+    "rgba(0, 0, 0, 0.04)",
+    "transparent",
+  ],
+  locations: [0, 0.34, 0.46, 0.56, 0.66, 0.76, 0.86, 0.94, 1],
+} as const;
 
 type LiquidGlassSurfaceProps = {
   style?: StyleProp<ViewStyle>;
@@ -148,8 +164,10 @@ export function GradualLiquidGlassBackdrop({
           style={StyleSheet.absoluteFill}
           maskElement={
             <LinearGradient
-              colors={["#000000", "#000000", "transparent"]}
-              locations={[0, 0.48, 1]}
+              colors={[...GRADUAL_GLASS_FADE_MASK.colors]}
+              locations={[...GRADUAL_GLASS_FADE_MASK.locations]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
           }
@@ -160,8 +178,16 @@ export function GradualLiquidGlassBackdrop({
         <>
           {glassLayer}
           <LinearGradient
-            colors={["transparent", "rgba(0, 0, 0, 0.08)"]}
-            style={styles.androidFadeOverlay}
+            colors={[
+              "transparent",
+              "rgba(0, 0, 0, 0.02)",
+              "rgba(0, 0, 0, 0.05)",
+              "rgba(0, 0, 0, 0.08)",
+            ]}
+            locations={[0, 0.45, 0.75, 1]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={[styles.androidFadeOverlay, { height: fadeHeight }]}
           />
         </>
       )}
@@ -178,6 +204,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: GRADUAL_GLASS_FADE_HEIGHT,
   },
 });

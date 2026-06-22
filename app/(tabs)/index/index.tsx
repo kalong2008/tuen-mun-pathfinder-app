@@ -1,24 +1,20 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
-import { NoticeListItem } from '@/components/notice/NoticeListItem';
 import { AppLogo } from '@/components/AppLogo';
+import { DailyVerseCard } from '@/components/home/DailyVerseCard';
+import { HomeQuickCard } from '@/components/home/HomeQuickCard';
 import { HomeHeaderLogin, HomeHeaderMenuButton } from '@/components/HomeHeader';
-import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
 import { ClubCard } from '@/components/ui/ClubCard';
 import { HeroBanner } from '@/components/ui/HeroBanner';
-import { ScalePressable } from '@/components/ui/ScalePressable';
 import { Screen } from '@/components/ui/Screen';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { spacing, TARGET_COLORS, typography } from '@/constants/theme';
+import { spacing, TARGET_COLORS } from '@/constants/theme';
 import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { API } from '@/lib/api';
@@ -30,7 +26,11 @@ import {
   type ActivitiesByDate,
   type ActivityClub,
 } from '@/lib/calendar-utils';
-import { getNoticePreview, type NoticeItem } from '@/lib/notice-utils';
+import {
+  formatNoticeDate,
+  getNoticePreview,
+  type NoticeItem,
+} from '@/lib/notice-utils';
 import { HERO_BANNER_PHOTO } from '@/lib/photo-url';
 
 type DailyVerse = {
@@ -101,7 +101,7 @@ export default function HomeScreen() {
 
         if (noticesRes.ok) {
           const notices = (await noticesRes.json()) as NoticeItem[];
-          setNoticePreview(getNoticePreview(notices, 2));
+          setNoticePreview(getNoticePreview(notices, 1));
         }
       } catch (err) {
         console.error('Home data error:', err);
@@ -137,80 +137,47 @@ export default function HomeScreen() {
           />
         </View>
 
+        <DailyVerseCard
+          style={styles.verseCard}
+          passage={dailyVerse?.passage}
+          citation={dailyVerse?.citation}
+          version={dailyVerse?.version}
+          loading={verseLoading}
+          error={verseError}
+        />
+
         <View style={styles.quickRow}>
-          <Card muted style={styles.quickCard}>
-            <Text style={[styles.quickLabel, { color: colors.primary }]}>今日經文</Text>
-            {verseLoading ? (
-              <ActivityIndicator color={colors.primary} style={styles.quickLoader} />
-            ) : (
-              <>
-                {verseError ? (
-                  <Text style={[styles.quickError, { color: colors.danger }]}>{verseError}</Text>
-                ) : null}
-                <Text style={[styles.quickText, { color: colors.text }]} numberOfLines={4}>
-                  {dailyVerse?.passage}
-                </Text>
-                <Text style={[styles.quickMeta, { color: colors.muted }]}>
-                  {dailyVerse?.citation}
-                </Text>
-              </>
-            )}
-          </Card>
-
-          <ScalePressable
-            style={styles.quickCard}
-            onPress={() => router.push('/(tabs)/calendar')}
-          >
-            <Card muted style={styles.quickCardInner}>
-              <Text style={[styles.quickLabel, { color: colors.primary }]}>下一活動</Text>
-              {nextEvent ? (
-                <>
-                  <Text style={[styles.quickText, { color: colors.text }]} numberOfLines={2}>
-                    {nextEvent.name}
-                  </Text>
-                  <Text style={[styles.quickMeta, { color: colors.muted }]}>
-                    {nextEvent.date}
-                  </Text>
-                  {nextEvent.club ? (
-                    <View style={styles.clubBadges}>
-                      {getActivityClubBadges(nextEvent.club).map((badge) => (
-                        <Badge
-                          key={badge.club}
-                          label={badge.label}
-                          color={getClubColor(badge.club)}
-                        />
-                      ))}
-                    </View>
-                  ) : null}
-                </>
-              ) : (
-                <Text style={[styles.quickMeta, { color: colors.muted }]}>暫無即將舉行的活動</Text>
-              )}
-            </Card>
-          </ScalePressable>
-        </View>
-
-        {noticePreview.length > 0 ? (
-          <View style={styles.section}>
-            <SectionHeader
-              title="最新通告"
-              action={
-                <ScalePressable onPress={() => router.push('/(tabs)/notice')}>
-                  <Text style={[styles.linkAction, { color: colors.primary }]}>查看全部</Text>
-                </ScalePressable>
+          {noticePreview[0] ? (
+            <HomeQuickCard
+              variant="notice"
+              title={noticePreview[0].title}
+              subtitle={formatNoticeDate(noticePreview[0].date)}
+              emptyText="暫無最新通告"
+              onPress={() =>
+                router.push({
+                  pathname: '/noticeDetailModal',
+                  params: { id: noticePreview[0].id },
+                })
               }
             />
-            {noticePreview.map((notice) => (
-              <View key={notice.id} style={styles.noticePreviewWrap}>
-                <NoticeListItem
-                  notice={notice}
-                  variant="preview"
-                  onPress={() => router.push('/(tabs)/notice')}
-                />
-              </View>
-            ))}
-          </View>
-        ) : null}
+          ) : null}
+
+          <HomeQuickCard
+            variant="activity"
+            title={nextEvent?.name}
+            subtitle={nextEvent?.date}
+            emptyText="暫無即將舉行的活動"
+            badges={
+              nextEvent?.club
+                ? getActivityClubBadges(nextEvent.club).map((badge) => ({
+                    label: badge.label,
+                    color: getClubColor(badge.club),
+                  }))
+                : []
+            }
+            onPress={() => router.push('/(tabs)/calendar')}
+          />
+        </View>
 
         <View style={styles.section}>
           <SectionHeader title="認識我們" />
@@ -288,51 +255,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
+  verseCard: {
+    marginBottom: spacing.md,
+  },
   quickRow: {
     flexDirection: 'row',
     gap: spacing.md,
     marginBottom: spacing.xl,
-  },
-  quickCard: {
-    flex: 1,
-  },
-  quickCardInner: {
-    flex: 1,
-    height: '100%',
-  },
-  quickLabel: {
-    ...typography.label,
-    marginBottom: spacing.sm,
-  },
-  quickText: {
-    ...typography.body,
-    marginBottom: spacing.xs,
-  },
-  quickMeta: {
-    ...typography.caption,
-    marginBottom: spacing.sm,
-  },
-  clubBadges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  quickLoader: {
-    marginVertical: spacing.lg,
-  },
-  quickError: {
-    ...typography.caption,
-    marginBottom: spacing.xs,
+    alignItems: 'stretch',
   },
   section: {
     marginBottom: spacing.xl,
-  },
-  linkAction: {
-    ...typography.caption,
-    fontWeight: '600',
-  },
-  noticePreviewWrap: {
-    marginBottom: spacing.xs,
   },
   clubScroll: {
     gap: spacing.md,

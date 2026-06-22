@@ -1,9 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useCallback, useState } from 'react';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,41 +10,137 @@ import {
   View,
 } from 'react-native';
 
-import { Badge } from '@/components/ui/Badge';
-import { CenterFadeSheet } from '@/components/ui/AnimatedOverlay';
-import { radius, shadows, spacing, TARGET_COLORS, typography } from '@/constants/theme';
+import { Card } from '@/components/ui/Card';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { LoadingView } from '@/components/ui/LoadingView';
+import { radius, spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
-import { apiUrl } from '@/lib/api';
-import { expandNoticeTargets, hasBothNoticeTargets } from '@/lib/notice-utils';
-import { getSingleTargetColor, getTargetColor } from '@/lib/target-colors';
+import { API, apiUrl } from '@/lib/api';
+import {
+  expandNoticeTargets,
+  formatNoticeDate,
+  type NoticeItem,
+} from '@/lib/notice-utils';
+import { getTargetColor } from '@/lib/target-colors';
 
-type NoticeItem = {
-  id: string;
-  title: string;
-  date: string;
-  activityType: string;
-  pdfUrl: string[];
-  target: string[];
+type DetailRowProps = {
+  label: string;
+  value: string;
+  isLast?: boolean;
 };
 
-type NoticeDetailModalProps = {
-  visible: boolean;
-  notice: NoticeItem | null;
-  onClose: () => void;
-};
+function DetailRow({ label, value, isLast = false }: DetailRowProps) {
+  const { colors } = useAppTheme();
 
-function formatDate(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
-  } catch {
-    return dateString;
-  }
+  return (
+    <>
+      <View style={styles.detailRow}>
+        <Text style={[styles.detailLabel, { color: colors.text }]}>{label}</Text>
+        <Text style={[styles.detailValue, { color: colors.muted }]} numberOfLines={3}>
+          {value}
+        </Text>
+      </View>
+      {isLast ? null : <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+    </>
+  );
 }
 
-const NoticeDetailModal = ({ visible, notice, onClose }: NoticeDetailModalProps) => {
+type DocumentRowProps = {
+  fileName: string;
+  loading: boolean;
+  isLast?: boolean;
+  onPress: () => void;
+};
+
+function DocumentRow({ fileName, loading, isLast = false, onPress }: DocumentRowProps) {
   const { colors } = useAppTheme();
+
+  return (
+    <>
+      <Pressable
+        onPress={onPress}
+        disabled={loading}
+        style={({ pressed }) => [
+          styles.documentRow,
+          pressed && !loading ? { backgroundColor: colors.surfaceMuted } : null,
+        ]}
+      >
+        <IconSymbol name="doc.text" size={20} color={colors.primary} />
+        <View style={styles.documentCopy}>
+          <Text style={[styles.documentTitle, { color: colors.text }]} numberOfLines={1}>
+            {fileName}
+          </Text>
+          <Text style={[styles.documentSubtitle, { color: colors.muted }]}>通告下載</Text>
+        </View>
+        {loading ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <IconSymbol name="chevron.right" size={16} color={colors.muted} />
+        )}
+      </Pressable>
+      {isLast ? null : <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+    </>
+  );
+}
+
+export default function NoticeDetailModal() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useAppTheme();
+  const [notice, setNotice] = useState<NoticeItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      setLoadError('找不到通告');
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadNotice() {
+      setLoading(true);
+      setLoadError(null);
+
+      try {
+        const response = await fetch(API.notices());
+        if (!response.ok) {
+          throw new Error(`Network response was not ok: ${response.status}`);
+        }
+
+        const notices = (await response.json()) as NoticeItem[];
+        const matchedNotice = notices.find((item) => item.id === id) ?? null;
+
+        if (cancelled) return;
+
+        if (!matchedNotice) {
+          setLoadError('找不到通告');
+          setNotice(null);
+        } else {
+          setNotice(matchedNotice);
+        }
+      } catch (error) {
+        console.error('Failed to load notice detail:', error);
+        if (!cancelled) {
+          setLoadError('無法載入通告，請稍後再試');
+          setNotice(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadNotice();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const handleOpenPdf = useCallback(
     async (pdfPath: string) => {
@@ -77,192 +172,159 @@ const NoticeDetailModal = ({ visible, notice, onClose }: NoticeDetailModalProps)
     [notice],
   );
 
-  if (!notice) return null;
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const noticeDate = new Date(notice.date);
-  noticeDate.setHours(0, 0, 0, 0);
-  const isPastActivity = noticeDate < today;
-  const targetColor = getTargetColor(notice.target, isPastActivity);
+  const noticeDate = notice ? new Date(notice.date) : null;
+  if (noticeDate) {
+    noticeDate.setHours(0, 0, 0, 0);
+  }
+  const isPastActivity = noticeDate ? noticeDate < today : false;
+  const screenTitle = notice
+    ? `${notice.title}${isPastActivity ? ' (過去活動)' : ''}`
+    : '通告';
 
   return (
-    <CenterFadeSheet visible={visible} onClose={onClose}>
-      <View style={[styles.modalContent, { backgroundColor: colors.surface }, shadows.md]}>
-        <View style={[styles.header, { backgroundColor: `${targetColor}22`, borderBottomColor: colors.border }]}>
-          <Text
-            style={[
-              styles.headerTitle,
-              { color: isPastActivity ? colors.muted : colors.text },
-            ]}
-            numberOfLines={3}
-          >
-            {notice.title}
-            {isPastActivity && ' (過去活動)'}
-          </Text>
-          <Pressable
-            onPress={onClose}
-            style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.6 : 1 }]}
-            accessibilityRole="button"
-            accessibilityLabel="關閉"
-          >
-            <Ionicons name="close" size={22} color={colors.muted} />
-          </Pressable>
+    <>
+      <Stack.Screen
+        options={{
+          title: screenTitle,
+          headerShown: true,
+          headerTitleAlign: 'center',
+          headerBackButtonDisplayMode: 'minimal',
+          headerBackVisible: false,
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="關閉"
+              style={({ pressed }) => [styles.headerCloseButton, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <IconSymbol name="xmark" size={22} color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
+
+      {loading ? (
+        <LoadingView message="載入通告…" />
+      ) : loadError || !notice ? (
+        <View style={[styles.container, { backgroundColor: colors.surfaceMuted }]}>
+          <Text style={[styles.errorText, { color: colors.muted }]}>{loadError ?? '找不到通告'}</Text>
         </View>
+      ) : (
+        <ScrollView
+          style={[styles.container, { backgroundColor: colors.surfaceMuted }]}
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.muted }]}>詳情</Text>
+          <Card style={styles.groupCard}>
+            <DetailRow label="日期" value={formatNoticeDate(notice.date)} />
+            <DetailRow label="活動類型" value={notice.activityType} />
+            <DetailRow
+              label="參與對象"
+              value={expandNoticeTargets(notice.target).join(' · ')}
+              isLast
+            />
+          </Card>
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.infoSection}>
-            <Text style={[styles.label, { color: colors.muted }]}>日期</Text>
-            <Text style={[styles.value, { color: colors.text }]}>{formatDate(notice.date)}</Text>
-          </View>
+          {notice.pdfUrl.length > 0 ? (
+            <>
+              <Text style={[styles.sectionTitle, { color: colors.muted }]}>相關文件</Text>
+              <Card style={styles.groupCard}>
+                {notice.pdfUrl.map((pdf, index) => {
+                  const fileName = pdf.split('/').pop() || `文件 ${index + 1}`;
 
-          <View style={styles.infoSection}>
-            <Text style={[styles.label, { color: colors.muted }]}>活動類型</Text>
-            <Text style={[styles.value, { color: colors.text }]}>{notice.activityType}</Text>
-          </View>
-
-          <View style={styles.infoSection}>
-            <Text style={[styles.label, { color: colors.muted }]}>參與對象</Text>
-            <View style={styles.targetContainer}>
-              {expandNoticeTargets(notice.target).map((target) => (
-                <Badge
-                  key={target}
-                  label={target}
-                  color={getSingleTargetColor(target, isPastActivity)}
-                />
-              ))}
-            </View>
-          </View>
-
-          {notice.pdfUrl.length > 0 && (
-            <View style={styles.pdfSection}>
-              <Text style={[styles.pdfSectionTitle, { color: colors.text }]}>相關文件</Text>
-              {notice.pdfUrl.map((pdf, index) => {
-                let buttonColor = targetColor;
-                if (
-                  !isPastActivity &&
-                  hasBothNoticeTargets(notice.target)
-                ) {
-                  if (pdf.toLowerCase().includes('pathfinder')) {
-                    buttonColor = TARGET_COLORS.PATHFINDER;
-                  } else if (pdf.toLowerCase().includes('adventurer')) {
-                    buttonColor = TARGET_COLORS.ADVENTURER;
-                  }
-                }
-
-                const isLoading = loadingPdf === pdf;
-                const fileName = pdf.split('/').pop() || `文件 ${index + 1}`;
-
-                return (
-                  <Pressable
-                    key={pdf}
-                    onPress={() => handleOpenPdf(pdf)}
-                    disabled={isLoading}
-                    style={({ pressed }) => [
-                      styles.pdfButton,
-                      { backgroundColor: buttonColor, opacity: isLoading ? 0.7 : pressed ? 0.88 : 1 },
-                    ]}
-                  >
-                    <View style={styles.pdfButtonContent}>
-                      <Ionicons name="document-text-outline" size={18} color="#FFFFFF" />
-                      <View style={styles.pdfTextContainer}>
-                        <Text style={styles.pdfButtonText}>通告下載</Text>
-                        <Text style={styles.pdfFileName} numberOfLines={1}>
-                          {fileName}
-                        </Text>
-                      </View>
-                      {isLoading ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <Ionicons name="open-outline" size={18} color="#FFFFFF" />
-                      )}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
+                  return (
+                    <DocumentRow
+                      key={pdf}
+                      fileName={fileName}
+                      loading={loadingPdf === pdf}
+                      isLast={index === notice.pdfUrl.length - 1}
+                      onPress={() => handleOpenPdf(pdf)}
+                    />
+                  );
+                })}
+              </Card>
+            </>
+          ) : null}
         </ScrollView>
-      </View>
-    </CenterFadeSheet>
+      )}
+    </>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  modalContent: {
-    borderRadius: radius.lg,
-    width: '100%',
-    maxHeight: '100%',
-    overflow: 'hidden',
-    ...Platform.select({
-      android: { elevation: 8 },
-      default: {},
-    }),
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    ...typography.heading,
+  container: {
     flex: 1,
   },
-  closeButton: {
+  headerCloseButton: {
     padding: spacing.xs,
   },
   scrollContent: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.sm,
   },
-  infoSection: {
-    marginBottom: spacing.lg,
-  },
-  label: {
-    ...typography.label,
-    marginBottom: spacing.xs,
-  },
-  value: {
-    ...typography.body,
-  },
-  pdfSection: {
+  sectionTitle: {
+    ...typography.small,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
     marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    marginLeft: spacing.xs,
   },
-  pdfSectionTitle: {
-    ...typography.bodyMedium,
-    marginBottom: spacing.md,
+  groupCard: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: 0,
+    borderRadius: radius.lg,
   },
-  pdfButton: {
-    padding: spacing.md,
-    borderRadius: radius.md,
-    marginBottom: spacing.sm,
-    ...shadows.sm,
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  pdfButtonContent: {
+  detailLabel: {
+    ...typography.body,
+    flexShrink: 0,
+  },
+  detailValue: {
+    ...typography.body,
+    flex: 1,
+    textAlign: 'right',
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: spacing.lg,
+  },
+  documentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
   },
-  pdfTextContainer: {
+  documentCopy: {
     flex: 1,
+    gap: 2,
   },
-  pdfButtonText: {
+  documentTitle: {
     ...typography.bodyMedium,
-    color: '#FFFFFF',
   },
-  pdfFileName: {
-    ...typography.small,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 2,
+  documentSubtitle: {
+    ...typography.caption,
   },
-  targetContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
+  errorText: {
+    ...typography.body,
+    textAlign: 'center',
+    padding: spacing.xl,
   },
 });
-
-export default NoticeDetailModal;
