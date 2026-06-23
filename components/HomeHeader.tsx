@@ -63,7 +63,7 @@ export function HomeHeaderLogin() {
       <SignedOut>
         <Pressable
           onPress={() =>
-            router.push(`/sign-in?redirect_url=${encodeURIComponent('/(tabs)/')}`)
+            router.push(`/sign-in?redirect_url=${encodeURIComponent('/(tabs)/home')}`)
           }
           style={({ pressed }) => [
             styles.loginButton,

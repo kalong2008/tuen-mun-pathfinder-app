@@ -22,7 +22,7 @@ function TabsLayoutContent() {
       sidebarAdaptable={false}
       disableTransparentOnScrollEdge={false}
     >
-      <NativeTabs.Trigger name="index">
+      <NativeTabs.Trigger name="home">
         <NativeTabs.Trigger.Label>首頁</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
