@@ -104,7 +104,7 @@ function RootLayoutNav() {
           name="noticeDetailModal"
           options={{
             presentation: 'formSheet',
-            sheetAllowedDetents: [1],
+            sheetAllowedDetents: Platform.OS === 'android' ? [0.85] : [1],
             sheetGrabberVisible: Platform.OS === 'ios',
             contentStyle: { flex: 1 },
             headerShown: Platform.OS === 'ios',

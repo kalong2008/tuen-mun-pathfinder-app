@@ -6,7 +6,7 @@ import {
   type GlassStyle,
 } from 'expo-glass-effect';
 import type { ReactNode } from 'react';
-import { Platform, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useAppTheme } from '@/hooks/useAppTheme';
 
@@ -22,6 +22,10 @@ type LiquidGlassSurfaceProps = {
 
 function canUseLiquidGlass() {
   return Platform.OS === 'ios' && isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+}
+
+function getAndroidGlassBackground(isDark: boolean) {
+  return isDark ? 'rgba(26, 47, 35, 0.94)' : 'rgba(255, 255, 255, 0.94)';
 }
 
 export function LiquidGlassSurface({
@@ -45,6 +49,17 @@ export function LiquidGlassSurface({
       >
         {children}
       </GlassView>
+    );
+  }
+
+  if (Platform.OS === 'android') {
+    return (
+      <View
+        pointerEvents={pointerEvents}
+        style={[style, { backgroundColor: getAndroidGlassBackground(isDark) }]}
+      >
+        {children}
+      </View>
     );
   }
 
@@ -78,6 +93,19 @@ export function LiquidGlassBackdrop({
         style={[StyleSheet.absoluteFill, style]}
         glassEffectStyle={glassEffectStyle}
         colorScheme={isDark ? 'dark' : 'light'}
+      />
+    );
+  }
+
+  if (Platform.OS === 'android') {
+    return (
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          style,
+          { backgroundColor: getAndroidGlassBackground(isDark) },
+        ]}
       />
     );
   }
