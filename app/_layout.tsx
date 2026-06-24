@@ -13,6 +13,7 @@ import * as Notifications from 'expo-notifications';
 import { Stack, useRouter, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
 import { HERO_BANNER_PHOTO } from '@/lib/photo-url';
@@ -104,8 +105,9 @@ function RootLayoutNav() {
           options={{
             presentation: 'formSheet',
             sheetAllowedDetents: [1],
-            sheetGrabberVisible: true,
+            sheetGrabberVisible: Platform.OS === 'ios',
             contentStyle: { flex: 1 },
+            headerShown: Platform.OS === 'ios',
           }}
         />
         <Stack.Screen name="+not-found" />

@@ -14,15 +14,15 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { Button } from '@/components/ui/Button';
 import { GalleryPhotosHeader, getGalleryPhotosHeaderHeight } from '@/components/gallery/GalleryPhotosHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { LoadingView } from '@/components/ui/LoadingView';
 import { ScalePressable } from '@/components/ui/ScalePressable';
-import { headerContentGap, radius, spacing, typography } from '@/constants/theme';
+import { radius, spacing, typography } from '@/constants/theme';
 import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
+import { useStickyHeaderContentInset } from '@/hooks/useStickyHeaderContentInset';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import {
   extractGalleryYears,
@@ -212,11 +212,13 @@ export default function GalleriesListScreen() {
   const [sort, setSort] = React.useState<GallerySortOption>('newest');
   const [selectedYear, setSelectedYear] = React.useState<number | null>(null);
   const [viewMode, setViewMode] = React.useState<GalleryViewMode>('card');
-  const [headerHeight, setHeaderHeight] = React.useState(0);
-
-  const contentTopInset =
-    (headerHeight || getGalleryPhotosHeaderHeight(insets.top)) + headerContentGap;
-  const scrollContentTopInset = Math.max(0, contentTopInset - insets.top);
+  const [headerHeight, setHeaderHeight] = React.useState(() =>
+    getGalleryPhotosHeaderHeight(insets.top),
+  );
+  const { contentTopInset, scrollContentTopInset } = useStickyHeaderContentInset(
+    headerHeight,
+    getGalleryPhotosHeaderHeight,
+  );
 
   const availableYears = React.useMemo(() => extractGalleryYears(galleries), [galleries]);
 

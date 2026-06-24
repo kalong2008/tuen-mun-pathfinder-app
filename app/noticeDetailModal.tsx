@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 
 import { Card } from '@/components/ui/Card';
+import { FormSheetHeader } from '@/components/ui/FormSheetHeader';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { LoadingView } from '@/components/ui/LoadingView';
 import { radius, spacing, typography } from '@/constants/theme';
@@ -212,29 +214,52 @@ export default function NoticeDetailModal() {
     ? getNoticeDisplayDate(notice, calendarActivities)
     : '';
   const pdfDocuments = notice ? getNoticePdfDocuments(notice) : [];
+  const isAndroid = Platform.OS === 'android';
 
   return (
-    <>
+    <View
+      style={[
+        styles.screen,
+        { backgroundColor: colors.surfaceMuted },
+        isAndroid && styles.androidSheet,
+      ]}
+    >
       <Stack.Screen
         options={{
           title: screenTitle,
-          headerShown: true,
+          headerShown: !isAndroid,
           headerTitleAlign: 'center',
           headerBackButtonDisplayMode: 'minimal',
           headerBackVisible: false,
+          headerStyle: { backgroundColor: colors.surfaceMuted },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+          contentStyle: { flex: 1, backgroundColor: colors.surfaceMuted },
           headerRight: () => (
             <Pressable
               onPress={() => router.back()}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel="關閉"
-              style={({ pressed }) => [styles.headerCloseButton, { opacity: pressed ? 0.6 : 1 }]}
+              style={({ pressed }) => [
+                styles.headerCloseButton,
+                { opacity: pressed ? 0.6 : 1 },
+              ]}
             >
               <IconSymbol name="xmark" size={22} color={colors.text} />
             </Pressable>
           ),
         }}
       />
+
+      {isAndroid ? (
+        <FormSheetHeader
+          title={screenTitle}
+          onClose={() => router.back()}
+          backgroundColor={colors.surfaceMuted}
+          style={styles.androidHeader}
+        />
+      ) : null}
 
       {loading ? (
         <LoadingView message="載入通告…" />
@@ -245,7 +270,7 @@ export default function NoticeDetailModal() {
       ) : (
         <ScrollView
           style={[styles.container, { backgroundColor: colors.surfaceMuted }]}
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -288,13 +313,24 @@ export default function NoticeDetailModal() {
           ) : null}
         </ScrollView>
       )}
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  androidSheet: {
+    borderTopLeftRadius: radius.xxl,
+    borderTopRightRadius: radius.xxl,
+    overflow: 'hidden',
+  },
   container: {
     flex: 1,
+  },
+  androidHeader: {
+    paddingHorizontal: spacing.lg,
   },
   headerCloseButton: {
     padding: spacing.xs,

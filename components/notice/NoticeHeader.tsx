@@ -55,27 +55,28 @@ export function NoticeHeader({
   };
 
   const content = (
-    <View style={styles.row}>
-      <View style={styles.titleBlock}>
+    <View style={styles.content}>
+      <View style={styles.titleRow}>
         <Text style={[styles.title, { color: colors.text }]}>通告</Text>
-        <Text
-          style={[styles.subtitle, { color: colors.muted }]}
-          numberOfLines={1}
-        >
-          {subtitle}
-        </Text>
+
+        {canShowOptions ? (
+          <NoticeHeaderOptionsButton
+            club={club}
+            onClubChange={onClubChange}
+            timeline={timeline}
+            onTimelineChange={onTimelineChange}
+          />
+        ) : (
+          <View style={styles.optionsPlaceholder} />
+        )}
       </View>
 
-      {canShowOptions ? (
-        <NoticeHeaderOptionsButton
-          club={club}
-          onClubChange={onClubChange}
-          timeline={timeline}
-          onTimelineChange={onTimelineChange}
-        />
-      ) : (
-        <View style={styles.optionsPlaceholder} />
-      )}
+      <Text
+        style={[styles.subtitle, { color: colors.muted }]}
+        numberOfLines={1}
+      >
+        {subtitle}
+      </Text>
     </View>
   );
 
@@ -121,18 +122,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
   },
-  row: {
+  content: {
+    gap: spacing.xs,
+  },
+  titleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
   },
-  titleBlock: {
+  title: {
     flex: 1,
     minWidth: 0,
-    gap: spacing.xs,
-  },
-  title: {
     fontSize: 34,
     fontWeight: '700',
     lineHeight: 41,

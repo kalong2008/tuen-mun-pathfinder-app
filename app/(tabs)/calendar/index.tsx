@@ -19,9 +19,10 @@ import { ActivityListItem } from "@/components/activity/ActivityListItem";
 import { ActivityMonthCalendar } from "@/components/activity/ActivityMonthCalendar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingView } from "@/components/ui/LoadingView";
-import { headerContentGap, spacing, typography } from "@/constants/theme";
+import { spacing, typography } from "@/constants/theme";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useNativeTabScrollProps } from "@/hooks/useNativeTabScrollProps";
+import { useStickyHeaderContentInset } from "@/hooks/useStickyHeaderContentInset";
 import { API } from "@/lib/api";
 import {
     filterCombinedActivities,
@@ -54,11 +55,11 @@ export default function CalendarScreen() {
   const [currentMonth, setCurrentMonth] = useState(
     new Date().toISOString().split("T")[0],
   );
-  const [headerHeight, setHeaderHeight] = useState(0);
-
-  const contentTopInset =
-    (headerHeight || getActivityHeaderHeight(insets.top)) + headerContentGap;
-  const scrollContentTopInset = Math.max(0, contentTopInset - insets.top);
+  const [headerHeight, setHeaderHeight] = useState(() => getActivityHeaderHeight(insets.top));
+  const { contentTopInset, scrollContentTopInset } = useStickyHeaderContentInset(
+    headerHeight,
+    getActivityHeaderHeight,
+  );
 
   const fetchData = useCallback(async () => {
     try {

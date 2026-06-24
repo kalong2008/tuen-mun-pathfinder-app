@@ -9,13 +9,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { NoticeHeader, getNoticeHeaderHeight } from '@/components/notice/NoticeHeader';
 import { NoticeListItem } from '@/components/notice/NoticeListItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingView } from '@/components/ui/LoadingView';
-import { headerContentGap, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
 import { useNativeTabScrollProps } from '@/hooks/useNativeTabScrollProps';
+import { useStickyHeaderContentInset } from '@/hooks/useStickyHeaderContentInset';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { API } from '@/lib/api';
 import { type ActivitiesByDate } from '@/lib/calendar-utils';
@@ -54,11 +54,11 @@ export default function NoticeScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [clubFilter, setClubFilter] = useState<NoticeClubFilter>('all');
   const [timelineFilter, setTimelineFilter] = useState<NoticeTimelineFilter>('active');
-  const [headerHeight, setHeaderHeight] = useState(0);
-
-  const contentTopInset =
-    (headerHeight || getNoticeHeaderHeight(insets.top)) + headerContentGap;
-  const scrollContentTopInset = Math.max(0, contentTopInset - insets.top);
+  const [headerHeight, setHeaderHeight] = useState(() => getNoticeHeaderHeight(insets.top));
+  const { contentTopInset, scrollContentTopInset } = useStickyHeaderContentInset(
+    headerHeight,
+    getNoticeHeaderHeight,
+  );
 
   const fetchNotices = useCallback(async () => {
     try {

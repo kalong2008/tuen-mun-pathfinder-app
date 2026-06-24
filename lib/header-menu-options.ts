@@ -58,4 +58,10 @@ export const GALLERY_SORT_MENU_OPTIONS = [
   { value: 'name', label: '按名稱', icon: MENU_ICONS.sortName },
 ] as const satisfies readonly MenuOption[];
 
-export const FILTER_MENU_LABEL = '過濾';
+export const MENU_GROUP_LABELS = {
+  view: '顯示方式',
+  club: '參與對象',
+  timeline: '時間',
+  sort: '排序',
+  year: '年份',
+} as const;

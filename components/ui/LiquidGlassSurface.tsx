@@ -17,6 +17,7 @@ type LiquidGlassSurfaceProps = {
   isInteractive?: boolean;
   fallbackTint?: BlurViewProps['tint'];
   fallbackIntensity?: number;
+  pointerEvents?: 'auto' | 'none' | 'box-none' | 'box-only';
 };
 
 function canUseLiquidGlass() {
@@ -30,6 +31,7 @@ export function LiquidGlassSurface({
   isInteractive = false,
   fallbackTint,
   fallbackIntensity = 100,
+  pointerEvents,
 }: LiquidGlassSurfaceProps) {
   const { isDark } = useAppTheme();
 
@@ -50,7 +52,12 @@ export function LiquidGlassSurface({
     fallbackTint ?? (Platform.OS === 'ios' ? 'systemChromeMaterial' : isDark ? 'dark' : 'light');
 
   return (
-    <BlurView intensity={fallbackIntensity} tint={blurTint} style={style}>
+    <BlurView
+      pointerEvents={pointerEvents}
+      intensity={fallbackIntensity}
+      tint={blurTint}
+      style={style}
+    >
       {children}
     </BlurView>
   );

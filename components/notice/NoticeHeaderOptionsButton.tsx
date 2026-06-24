@@ -1,13 +1,11 @@
-import { Pressable, StyleSheet } from 'react-native';
-import * as DropdownMenu from 'zeego/dropdown-menu';
-
-import { renderMenuCheckboxItem } from '@/components/menu/renderMenuCheckboxItem';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { LiquidGlassSurface } from '@/components/ui/LiquidGlassSurface';
-import { radius } from '@/constants/theme';
-import { useAppTheme } from '@/hooks/useAppTheme';
+import { FilterMenuTriggerButton } from '@/components/menu/FilterMenuTriggerButton';
+import {
+  FilterDropdownMenu,
+  renderMenuCheckboxGroup,
+} from '@/components/menu/renderMenuCheckboxGroup';
 import {
   CLUB_MENU_OPTIONS,
+  MENU_GROUP_LABELS,
   NOTICE_TIMELINE_MENU_OPTIONS,
 } from '@/lib/header-menu-options';
 import type { NoticeClubFilter, NoticeTimelineFilter } from '@/lib/notice-utils';
@@ -25,63 +23,30 @@ export function NoticeHeaderOptionsButton({
   timeline,
   onTimelineChange,
 }: NoticeHeaderOptionsButtonProps) {
-  const { colors } = useAppTheme();
-  const iconColor = colors.text;
-
   const triggerButton = (
-    <Pressable
-      hitSlop={8}
-      style={styles.button}
-      accessibilityRole="button"
+    <FilterMenuTriggerButton
       accessibilityLabel="篩選通告"
-    >
-      <LiquidGlassSurface style={styles.buttonGlass} isInteractive>
-        <IconSymbol name="line.3.horizontal.decrease" size={17} color={iconColor} />
-      </LiquidGlassSurface>
-    </Pressable>
+      iconName="line.3.horizontal.decrease"
+    />
   );
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>{triggerButton}</DropdownMenu.Trigger>
-
-      <DropdownMenu.Content>
-        <DropdownMenu.Group>
-          {CLUB_MENU_OPTIONS.map((option) =>
-            renderMenuCheckboxItem({
-              itemKey: `club-${option.value}`,
-              option,
-              selected: club === option.value,
-              onSelect: onClubChange,
-            }),
-          )}
-        </DropdownMenu.Group>
-
-        <DropdownMenu.Group>
-          {NOTICE_TIMELINE_MENU_OPTIONS.map((option) =>
-            renderMenuCheckboxItem({
-              itemKey: `timeline-${option.value}`,
-              option,
-              selected: timeline === option.value,
-              onSelect: onTimelineChange,
-            }),
-          )}
-        </DropdownMenu.Group>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+    <FilterDropdownMenu trigger={triggerButton}>
+      {renderMenuCheckboxGroup({
+        groupKey: 'club',
+        label: MENU_GROUP_LABELS.club,
+        options: CLUB_MENU_OPTIONS,
+        isSelected: (value) => club === value,
+        onSelect: (value) => onClubChange(value as NoticeClubFilter),
+      })}
+      {renderMenuCheckboxGroup({
+        groupKey: 'timeline',
+        label: MENU_GROUP_LABELS.timeline,
+        options: NOTICE_TIMELINE_MENU_OPTIONS,
+        isSelected: (value) => timeline === value,
+        onSelect: onTimelineChange,
+        showSeparator: true,
+      })}
+    </FilterDropdownMenu>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  buttonGlass: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

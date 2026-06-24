@@ -63,23 +63,23 @@ export function ActivityHeader({
   };
 
   const content = (
-    <View style={styles.row}>
-      <View style={styles.titleBlock}>
+    <View style={styles.content}>
+      <View style={styles.titleRow}>
         <Text style={[styles.title, { color: colors.text }]}>活動</Text>
-      </View>
 
-      {canShowOptions ? (
-        <ActivityHeaderOptionsButton
-          club={club}
-          onClubChange={onClubChange}
-          timeline={timeline}
-          onTimelineChange={onTimelineChange}
-          viewMode={viewMode}
-          onViewModeChange={onViewModeChange}
-        />
-      ) : (
-        <View style={styles.optionsPlaceholder} />
-      )}
+        {canShowOptions ? (
+          <ActivityHeaderOptionsButton
+            club={club}
+            onClubChange={onClubChange}
+            timeline={timeline}
+            onTimelineChange={onTimelineChange}
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
+          />
+        ) : (
+          <View style={styles.optionsPlaceholder} />
+        )}
+      </View>
     </View>
   );
 
@@ -125,17 +125,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
   },
-  row: {
+  content: {
+    gap: spacing.xs,
+  },
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
   },
-  titleBlock: {
+  title: {
     flex: 1,
     minWidth: 0,
-  },
-  title: {
     fontSize: 34,
     fontWeight: '700',
     lineHeight: 41,

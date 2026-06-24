@@ -1,11 +1,8 @@
-import { Pressable, StyleSheet } from 'react-native';
-import * as DropdownMenu from 'zeego/dropdown-menu';
-
-import { renderMenuCheckboxItem } from '@/components/menu/renderMenuCheckboxItem';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { LiquidGlassSurface } from '@/components/ui/LiquidGlassSurface';
-import { radius } from '@/constants/theme';
-import { useAppTheme } from '@/hooks/useAppTheme';
+import { FilterMenuTriggerButton } from '@/components/menu/FilterMenuTriggerButton';
+import {
+  FilterDropdownMenu,
+  renderMenuCheckboxGroup,
+} from '@/components/menu/renderMenuCheckboxGroup';
 import type {
   ActivityClubFilter,
   ActivityTimelineFilter,
@@ -14,6 +11,7 @@ import type {
 import {
   ACTIVITY_VIEW_MENU_OPTIONS,
   CLUB_MENU_OPTIONS,
+  MENU_GROUP_LABELS,
   UPCOMING_MENU_OPTIONS,
 } from '@/lib/header-menu-options';
 
@@ -34,78 +32,43 @@ export function ActivityHeaderOptionsButton({
   viewMode,
   onViewModeChange,
 }: ActivityHeaderOptionsButtonProps) {
-  const { colors } = useAppTheme();
-  const iconColor = colors.text;
-
   const triggerButton = (
-    <Pressable
-      hitSlop={8}
-      style={styles.button}
-      accessibilityRole="button"
+    <FilterMenuTriggerButton
       accessibilityLabel="篩選活動"
-    >
-      <LiquidGlassSurface style={styles.buttonGlass} isInteractive>
-        <IconSymbol name="line.3.horizontal.decrease" size={17} color={iconColor} />
-      </LiquidGlassSurface>
-    </Pressable>
+      iconName="line.3.horizontal.decrease"
+    />
   );
 
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>{triggerButton}</DropdownMenu.Trigger>
+    <FilterDropdownMenu trigger={triggerButton}>
+      {renderMenuCheckboxGroup({
+        groupKey: 'view',
+        label: MENU_GROUP_LABELS.view,
+        options: ACTIVITY_VIEW_MENU_OPTIONS,
+        isSelected: (value) => viewMode === value,
+        onSelect: onViewModeChange,
+      })}
 
-      <DropdownMenu.Content>
-        <DropdownMenu.Group>
-          {ACTIVITY_VIEW_MENU_OPTIONS.map((option) =>
-            renderMenuCheckboxItem({
-              itemKey: `view-${option.value}`,
-              option,
-              selected: viewMode === option.value,
-              onSelect: onViewModeChange,
-            }),
-          )}
-        </DropdownMenu.Group>
-
-        {viewMode === 'list' ? (
-          <>
-            <DropdownMenu.Group>
-              {CLUB_MENU_OPTIONS.map((option) =>
-                renderMenuCheckboxItem({
-                  itemKey: `club-${option.value}`,
-                  option,
-                  selected: club === option.value,
-                  onSelect: onClubChange,
-                }),
-              )}
-            </DropdownMenu.Group>
-
-            <DropdownMenu.Group>
-              {UPCOMING_MENU_OPTIONS.map((option) =>
-                renderMenuCheckboxItem({
-                  itemKey: `timeline-${option.value}`,
-                  option,
-                  selected: timeline === option.value,
-                  onSelect: onTimelineChange,
-                }),
-              )}
-            </DropdownMenu.Group>
-          </>
-        ) : null}
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+      {viewMode === 'list' ? (
+        <>
+          {renderMenuCheckboxGroup({
+            groupKey: 'club',
+            label: MENU_GROUP_LABELS.club,
+            options: CLUB_MENU_OPTIONS,
+            isSelected: (value) => club === value,
+            onSelect: onClubChange,
+            showSeparator: true,
+          })}
+          {renderMenuCheckboxGroup({
+            groupKey: 'timeline',
+            label: MENU_GROUP_LABELS.timeline,
+            options: UPCOMING_MENU_OPTIONS,
+            isSelected: (value) => timeline === value,
+            onSelect: onTimelineChange,
+            showSeparator: true,
+          })}
+        </>
+      ) : null}
+    </FilterDropdownMenu>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  buttonGlass: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

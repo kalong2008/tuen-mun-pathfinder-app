@@ -1,16 +1,17 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import * as DropdownMenu from 'zeego/dropdown-menu';
 
+import { FilterMenuTriggerButton } from '@/components/menu/FilterMenuTriggerButton';
+import {
+  FilterDropdownMenu,
+  renderMenuCheckboxGroup,
+} from '@/components/menu/renderMenuCheckboxGroup';
 import { renderMenuCheckboxItem } from '@/components/menu/renderMenuCheckboxItem';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { LiquidGlassSurface } from '@/components/ui/LiquidGlassSurface';
-import { radius } from '@/constants/theme';
-import { useAppTheme } from '@/hooks/useAppTheme';
 import type { GallerySortOption, GalleryViewMode } from '@/lib/gallery-utils';
 import {
-  FILTER_MENU_LABEL,
   GALLERY_SORT_MENU_OPTIONS,
   GALLERY_VIEW_MENU_OPTIONS,
+  MENU_GROUP_LABELS,
   MENU_ICONS,
 } from '@/lib/header-menu-options';
 
@@ -37,9 +38,7 @@ export function GalleryHeaderOptionsButton({
   viewMode,
   onViewModeChange,
 }: GalleryHeaderOptionsButtonProps) {
-  const { colors } = useAppTheme();
   const isPhotosVariant = variant === 'photos';
-  const iconColor = colors.text;
 
   const yearOptions = [
     { value: ALL_YEARS_VALUE, label: '全部', icon: MENU_ICONS.yearAll },
@@ -51,51 +50,37 @@ export function GalleryHeaderOptionsButton({
   ];
 
   const triggerButton = (
-    <Pressable
-      hitSlop={8}
-      style={isPhotosVariant ? styles.photosButton : styles.headerButton}
-      accessibilityRole="button"
+    <FilterMenuTriggerButton
       accessibilityLabel="排序、篩選與顯示"
-    >
-      {isPhotosVariant ? (
-        <LiquidGlassSurface style={styles.photosButtonGlass} isInteractive>
-          <IconSymbol name="line.3.horizontal.decrease" size={17} color={iconColor} />
-        </LiquidGlassSurface>
-      ) : (
-        <View style={styles.headerButtonInner}>
-          <IconSymbol name="line.3.horizontal.decrease.circle" size={22} color={iconColor} />
-        </View>
-      )}
-    </Pressable>
+      iconName={
+        isPhotosVariant
+          ? 'line.3.horizontal.decrease'
+          : 'line.3.horizontal.decrease.circle'
+      }
+      iconSize={isPhotosVariant ? 17 : 22}
+      style={isPhotosVariant ? undefined : styles.headerButton}
+      variant={isPhotosVariant ? 'glass' : 'plain'}
+    />
   );
 
-  return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>{triggerButton}</DropdownMenu.Trigger>
-
-      <DropdownMenu.Content>
-        <DropdownMenu.Group>
-          {GALLERY_SORT_MENU_OPTIONS.map((option) =>
-            renderMenuCheckboxItem({
-              itemKey: `sort-${option.value}`,
-              option,
-              selected: sort === option.value,
-              onSelect: onSortChange,
-            }),
-          )}
-        </DropdownMenu.Group>
-
-        <DropdownMenu.Group>
-          {GALLERY_VIEW_MENU_OPTIONS.map((option) =>
-            renderMenuCheckboxItem({
-              itemKey: `view-${option.value}`,
-              option,
-              selected: viewMode === option.value,
-              onSelect: onViewModeChange,
-            }),
-          )}
-        </DropdownMenu.Group>
-
+  const yearMenu =
+    Platform.OS === 'android' ? (
+      renderMenuCheckboxGroup({
+        groupKey: 'year',
+        label: MENU_GROUP_LABELS.year,
+        options: yearOptions,
+        isSelected: (value) =>
+          value === ALL_YEARS_VALUE
+            ? selectedYear === null
+            : selectedYear === Number(value),
+        onSelect: (value) =>
+          onYearChange(value === ALL_YEARS_VALUE ? null : Number(value)),
+        showSeparator: true,
+      })
+    ) : (
+      <>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Label>{MENU_GROUP_LABELS.year}</DropdownMenu.Label>
         <DropdownMenu.Group>
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger key="filter">
@@ -103,7 +88,9 @@ export function GalleryHeaderOptionsButton({
                 ios={{ name: MENU_ICONS.filter.ios }}
                 androidIconName={MENU_ICONS.filter.android}
               />
-              <DropdownMenu.ItemTitle>{FILTER_MENU_LABEL}</DropdownMenu.ItemTitle>
+              <DropdownMenu.ItemTitle>
+                {selectedYear === null ? '全部' : `${selectedYear}年`}
+              </DropdownMenu.ItemTitle>
             </DropdownMenu.SubTrigger>
 
             <DropdownMenu.SubContent>
@@ -124,8 +111,31 @@ export function GalleryHeaderOptionsButton({
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
         </DropdownMenu.Group>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+      </>
+    );
+
+  return (
+    <FilterDropdownMenu
+      trigger={triggerButton}
+      rootStyle={isPhotosVariant ? undefined : styles.androidMenuRoot}
+    >
+      {renderMenuCheckboxGroup({
+        groupKey: 'sort',
+        label: MENU_GROUP_LABELS.sort,
+        options: GALLERY_SORT_MENU_OPTIONS,
+        isSelected: (value) => sort === value,
+        onSelect: onSortChange,
+      })}
+      {renderMenuCheckboxGroup({
+        groupKey: 'view',
+        label: MENU_GROUP_LABELS.view,
+        options: GALLERY_VIEW_MENU_OPTIONS,
+        isSelected: (value) => viewMode === value,
+        onSelect: onViewModeChange,
+        showSeparator: true,
+      })}
+      {yearMenu}
+    </FilterDropdownMenu>
   );
 }
 
@@ -136,20 +146,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photosButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  photosButtonGlass: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerButtonInner: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  androidMenuRoot: {
+    width: 44,
+    height: 44,
   },
 });

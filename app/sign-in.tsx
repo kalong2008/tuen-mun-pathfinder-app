@@ -1,12 +1,11 @@
 import { useAuth, useSignIn } from '@clerk/clerk-expo';
-import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
-import { ScalePressable } from '@/components/ui/ScalePressable';
+import { FormSheetHeader } from '@/components/ui/FormSheetHeader';
 import { TextField } from '@/components/ui/TextField';
 import { radius, spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -70,23 +69,14 @@ export default function SignInScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.content,
-          {
-            paddingTop: Math.max(insets.top, spacing.md),
-            paddingBottom: Math.max(insets.bottom, spacing.lg),
-          },
+          { paddingBottom: Math.max(insets.bottom, spacing.lg) },
         ]}
       >
-        <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: colors.text }]}>會員登入</Text>
-          <ScalePressable
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel="關閉"
-            style={[styles.closeButton, { backgroundColor: colors.surfaceMuted }]}
-          >
-            <Ionicons name="close" size={20} color={colors.text} />
-          </ScalePressable>
-        </View>
+        <FormSheetHeader
+          title="會員登入"
+          onClose={() => router.back()}
+          backgroundColor={colors.background}
+        />
 
         <Text style={[styles.subtitle, { color: colors.muted }]}>
           登入後即可瀏覽活動相片
@@ -130,23 +120,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  title: {
-    ...typography.title,
-    flex: 1,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   subtitle: {
     ...typography.body,
